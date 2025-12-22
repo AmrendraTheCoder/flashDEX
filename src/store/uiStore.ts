@@ -25,7 +25,7 @@ interface UIState {
   
   // Sidebar
   sidebarOpen: boolean
-  sidebarContent: 'alerts' | 'settings' | 'achievements' | 'history' | null
+  sidebarContent: 'alerts' | 'settings' | 'achievements' | 'history' | 'wallet' | null
   openSidebar: (content: UIState['sidebarContent']) => void
   closeSidebar: () => void
   
@@ -74,7 +74,7 @@ const DEFAULT_ACHIEVEMENTS: Achievement[] = [
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      darkMode: false,
+      darkMode: true, // Default to dark mode
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
       
       sidebarOpen: false,

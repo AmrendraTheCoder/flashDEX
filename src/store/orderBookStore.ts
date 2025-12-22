@@ -1,13 +1,20 @@
 import { create } from 'zustand'
 import type { Order, Trade, PnLEntry, Candle, TradingPair, Position, UserPortfolio, Analytics } from '../types'
+import { generateInitialBids, generateInitialAsks, generateInitialTrades, generateInitialLeaderboard } from '../utils/sampleData'
 
 export type { Order, Trade, PnLEntry }
 
 const TRADING_PAIRS: TradingPair[] = [
-  { symbol: 'ETH/USDT', base: 'ETH', quote: 'USDT', basePrice: 3500, change24h: 2.4, volume24h: 0, high24h: 3600, low24h: 3400 },
-  { symbol: 'BTC/USDT', base: 'BTC', quote: 'USDT', basePrice: 95000, change24h: 1.2, volume24h: 0, high24h: 96000, low24h: 94000 },
-  { symbol: 'MON/USDT', base: 'MON', quote: 'USDT', basePrice: 2.5, change24h: 5.8, volume24h: 0, high24h: 2.7, low24h: 2.3 },
+  { symbol: 'ETH/USDT', base: 'ETH', quote: 'USDT', basePrice: 3500, change24h: 2.4, volume24h: 125840, high24h: 3600, low24h: 3400 },
+  { symbol: 'BTC/USDT', base: 'BTC', quote: 'USDT', basePrice: 95000, change24h: 1.2, volume24h: 892450, high24h: 96000, low24h: 94000 },
+  { symbol: 'MON/USDT', base: 'MON', quote: 'USDT', basePrice: 2.5, change24h: 5.8, volume24h: 45230, high24h: 2.7, low24h: 2.3 },
 ]
+
+// Pre-generate initial data for all pairs
+const initialBids = new Map(TRADING_PAIRS.map(p => [p.symbol, generateInitialBids(p.basePrice, p.symbol)]))
+const initialAsks = new Map(TRADING_PAIRS.map(p => [p.symbol, generateInitialAsks(p.basePrice, p.symbol)]))
+const initialTrades = new Map(TRADING_PAIRS.map(p => [p.symbol, generateInitialTrades(p.basePrice, p.symbol)]))
+const initialLeaderboard = generateInitialLeaderboard()
 
 interface OrderBookState {
   // Current pair
@@ -61,22 +68,25 @@ interface OrderBookState {
 export const useOrderBookStore = create<OrderBookState>((set, get) => ({
   currentPair: TRADING_PAIRS[0],
   pairs: TRADING_PAIRS,
-  bids: new Map(TRADING_PAIRS.map(p => [p.symbol, []])),
-  asks: new Map(TRADING_PAIRS.map(p => [p.symbol, []])),
-  trades: new Map(TRADING_PAIRS.map(p => [p.symbol, []])),
+  bids: initialBids,
+  asks: initialAsks,
+  trades: initialTrades,
   candles: new Map(TRADING_PAIRS.map(p => [p.symbol, []])),
-  leaderboard: [],
+  leaderboard: initialLeaderboard,
   tps: 0,
-  totalVolume: 0,
-  totalOrders: 0,
+  totalVolume: 125840 + 892450 + 45230, // Sum of initial volumes
+  totalOrders: 72, // 12 bids + 12 asks per 3 pairs
   latency: 0,
   userPortfolio: null,
   analytics: {
-    volumeHistory: [],
-    tradeCount: 0,
-    avgTradeSize: 0,
-    volatility: 0,
-    topTraders: [],
+    volumeHistory: Array.from({ length: 20 }, (_, i) => ({ 
+      time: Date.now() - (19 - i) * 60000, 
+      volume: 5000 + Math.random() * 10000 
+    })),
+    tradeCount: 45,
+    avgTradeSize: 0.15,
+    volatility: 2.4,
+    topTraders: initialLeaderboard.slice(0, 5),
   },
 
   setCurrentPair: (symbol) => set((state) => ({

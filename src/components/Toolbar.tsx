@@ -21,6 +21,11 @@ export function Toolbar() {
           <circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
         </svg>
       </button>
+      <button onClick={() => openSidebar('wallet')} title="Wallet & Faucet" className="wallet-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+        </svg>
+      </button>
       <button onClick={toggleSound} title={soundEnabled ? 'Mute' : 'Unmute'}>
         {soundEnabled ? (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
