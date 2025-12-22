@@ -1152,3 +1152,94 @@ h4 {
   .overview-stats { grid-template-columns: 1fr; }
   .stat-card.large { grid-column: 1; }
 }
+
+/* PWA Install Banner */
+.pwa-install-banner {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px 20px; z-index: 150;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 90%; width: 420px;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.pwa-content { display: flex; align-items: center; gap: 12px; flex: 1; }
+.pwa-icon { flex-shrink: 0; }
+.pwa-text { display: flex; flex-direction: column; }
+.pwa-text strong { font-size: 14px; font-weight: 700; }
+.pwa-text span { font-size: 12px; color: var(--text-muted); }
+.pwa-actions { display: flex; gap: 8px; }
+.pwa-dismiss {
+  padding: 10px 16px; background: transparent; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.2s;
+}
+.pwa-dismiss:hover { border-color: var(--text-muted); }
+.pwa-install {
+  padding: 10px 20px; background: var(--accent); border: none;
+  border-radius: 8px; font-size: 13px; font-weight: 700; color: white;
+  cursor: pointer; transition: all 0.2s;
+}
+.pwa-install:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+@media (max-width: 500px) {
+  .pwa-install-banner { flex-direction: column; text-align: center; width: calc(100% - 32px); }
+  .pwa-content { flex-direction: column; }
+  .pwa-actions { width: 100%; }
+  .pwa-dismiss, .pwa-install { flex: 1; }
+}
+
+/* WebSocket Status */
+.live-dot.connected { background: var(--green); box-shadow: 0 0 12px var(--green); }
+.ws-badge {
+  font-size: 9px; padding: 2px 6px; background: var(--green);
+  color: white; border-radius: 4px; font-weight: 700; margin-left: 4px;
+}
+
+.empty-mini {
+  text-align: center; color: var(--text-muted); padding: 16px;
+  font-size: 12px; background: var(--bg-input); border-radius: 8px;
+}
+
+/* Offline Indicator */
+.offline-banner {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--red); color: white; padding: 8px;
+  text-align: center; font-size: 13px; font-weight: 600; z-index: 200;
+}
+
+/* Safe Area for iOS */
+@supports (padding: max(0px)) {
+  .app-container {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+}
+
+/* Standalone Mode Adjustments */
+@media (display-mode: standalone) {
+  .app-container { padding-top: max(20px, env(safe-area-inset-top)); }
+  .header { border-radius: 0 0 12px 12px; margin-top: -12px; padding-top: 20px; }
+}
+
+/* Pull to Refresh Indicator (for future use) */
+.pull-indicator {
+  position: fixed; top: 0; left: 50%; transform: translateX(-50%) translateY(-100%);
+  background: var(--accent); color: white; padding: 8px 16px;
+  border-radius: 0 0 12px 12px; font-size: 12px; font-weight: 600;
+  transition: transform 0.3s;
+}
+.pull-indicator.visible { transform: translateX(-50%) translateY(0); }
+
+/* Haptic Feedback Visual */
+@keyframes haptic {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.98); }
+}
+.haptic-feedback { animation: haptic 0.1s ease; }

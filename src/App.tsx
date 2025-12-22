@@ -17,6 +17,7 @@ import { Analytics } from './components/Analytics'
 import { Sidebar } from './components/Sidebar'
 import { Onboarding } from './components/Onboarding'
 import { Competition } from './components/Competition'
+import { PWAInstall } from './components/PWAInstall'
 import { useUIStore } from './store/uiStore'
 import { useOrderBookStore } from './store/orderBookStore'
 import { soundManager } from './utils/sounds'
@@ -104,6 +105,7 @@ function AppContent() {
       <Toaster position="top-right" richColors expand={false} />
       <Onboarding />
       <Sidebar />
+      <PWAInstall />
       <Header />
 
       <nav className="view-nav">

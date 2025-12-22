@@ -5,7 +5,7 @@ export interface Order {
   side: 'buy' | 'sell'
   timestamp: number
   trader: string
-  type: 'market' | 'limit' | 'stop-loss' | 'take-profit' | 'trailing-stop'
+  type: 'market' | 'limit' | 'stop-loss' | 'take-profit' | 'trailing-stop' | 'oco'
   stopPrice?: number
   trailingPercent?: number
   status: 'open' | 'filled' | 'partial' | 'cancelled'
@@ -34,13 +34,13 @@ export interface PnLEntry {
 
 export interface Position {
   pair: string
-  side: 'long' | 'short'
+  side: 'buy' | 'sell'
   entryPrice: number
   amount: number
   currentPrice: number
   pnl: number
   pnlPercent: number
-  timestamp: number
+  timestamp?: number
 }
 
 export interface Candle {

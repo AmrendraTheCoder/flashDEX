@@ -4,7 +4,6 @@ import { useOrderBookStore } from '../store/orderBookStore'
 class MatchingEngine {
   private tpsCounter = 0
   private lastTpsUpdate = Date.now()
-  private lastCandleTime = 0
 
   async processOrder(order: Order): Promise<Trade[]> {
     const startTime = performance.now()

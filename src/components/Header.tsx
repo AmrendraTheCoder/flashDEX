@@ -1,11 +1,9 @@
 import { useOrderBookStore } from '../store/orderBookStore'
-import { useUIStore } from '../store/uiStore'
 import { WalletConnect } from './WalletConnect'
 import { Toolbar } from './Toolbar'
 
 export function Header() {
   const { pairs, currentPair, setCurrentPair, tps, totalVolume } = useOrderBookStore()
-  const { darkMode } = useUIStore()
 
   return (
     <header className="header">

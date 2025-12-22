@@ -73,7 +73,7 @@ const DEFAULT_ACHIEVEMENTS: Achievement[] = [
 
 export const useUIStore = create<UIState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       darkMode: false,
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
       

@@ -109,8 +109,8 @@ export function TradingPanel() {
           amount: filled,
           side,
           timestamp: Date.now(),
-          maker: 'Market',
-          taker: order.trader,
+          buyer: side === 'buy' ? order.trader : 'Market',
+          seller: side === 'sell' ? order.trader : 'Market',
           pair: currentPair.symbol,
         }
         

@@ -25,13 +25,16 @@ interface LiveUser {
   volume: number
 }
 
-const WS_URL = import.meta.env.PROD 
-  ? 'wss://your-production-url.com/ws' 
-  : 'ws://localhost:3001/ws'
+// Set your Render WebSocket URL here after deployment
+const WS_URL = import.meta.env.VITE_WS_URL || (
+  import.meta.env.PROD 
+    ? 'wss://flashdex-ws.onrender.com/ws'  // Update this after Render deployment
+    : 'ws://localhost:3001/ws'
+)
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [connectedUsers, setConnectedUsers] = useState(1)
   const [liveLeaderboard, setLiveLeaderboard] = useState<LiveUser[]>([])
@@ -44,6 +47,7 @@ export function useWebSocket() {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
     
     try {
+      console.log('Connecting to WebSocket:', WS_URL)
       const ws = new WebSocket(WS_URL)
       
       ws.onopen = () => {
@@ -70,7 +74,6 @@ export function useWebSocket() {
               
             case 'leaderboard':
               setLiveLeaderboard(message.payload)
-              // Also update the store leaderboard
               message.payload.forEach((user: LiveUser) => {
                 updateLeaderboard({
                   trader: user.name,

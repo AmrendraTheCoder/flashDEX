@@ -6,7 +6,8 @@ import { useOrderBookStore } from '../store/orderBookStore'
 
 export function TradePanel() {
   const { address, isConnected } = useAccount()
-  const { currentPrice } = useOrderBookStore()
+  const { currentPair } = useOrderBookStore()
+  const currentPrice = currentPair.basePrice
   const [amount, setAmount] = useState('0.1')
   const [price, setPrice] = useState('')
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market')
@@ -31,6 +32,10 @@ export function TradePanel() {
       side,
       timestamp: Date.now(),
       trader: address.slice(0, 8) + '...',
+      type: orderType,
+      status: 'open',
+      filledAmount: 0,
+      pair: currentPair.symbol,
     }
 
     try {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createChart, ColorType } from 'lightweight-charts'
+import type { Time } from 'lightweight-charts'
 import { useOrderBookStore } from '../store/orderBookStore'
 
 type Timeframe = '1m' | '5m' | '15m' | '1h'
@@ -114,8 +115,8 @@ export function PriceChart() {
     // Set initial data based on timeframe
     const { candles, volumes } = generateInitialCandles(timeframe)
     setChartData(candles)
-    candleSeries.setData(candles)
-    volumeSeries.setData(volumes)
+    candleSeries.setData(candles as { time: Time; open: number; high: number; low: number; close: number }[])
+    volumeSeries.setData(volumes as { time: Time; value: number; color: string }[])
     chart.timeScale().fitContent()
 
     const handleResize = () => {

@@ -3,27 +3,51 @@ import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
 import { useCompetitionStore } from '../store/competitionStore'
 import { useOrderBookStore } from '../store/orderBookStore'
+import { useWebSocket } from '../hooks/useWebSocket'
 import { soundManager } from '../utils/sounds'
 
 export function Competition() {
   const { address, isConnected } = useAccount()
   const { userPortfolio } = useOrderBookStore()
   const {
-    activeCompetition, isJoined, competitors, connectedUsers, liveActivity,
+    activeCompetition, isJoined, competitors,
     startCompetition, joinCompetition, updateCompetitor, simulateUsers
   } = useCompetitionStore()
+  
+  const { 
+    isConnected: wsConnected, 
+    connectedUsers, 
+    liveLeaderboard, 
+    liveTrades,
+    identify,
+    updatePnl 
+  } = useWebSocket()
   
   const [duration, setDuration] = useState(5)
   const [timeLeft, setTimeLeft] = useState(0)
   const [hasStartedSim, setHasStartedSim] = useState(false)
 
-  // Start user simulation once
+  // Identify user when wallet connects
   useEffect(() => {
-    if (!hasStartedSim && activeCompetition?.status === 'active') {
+    if (isConnected && address && wsConnected) {
+      identify(address, `${address.slice(0, 6)}...${address.slice(-4)}`)
+    }
+  }, [isConnected, address, wsConnected, identify])
+
+  // Sync portfolio to WebSocket
+  useEffect(() => {
+    if (userPortfolio && wsConnected) {
+      updatePnl(userPortfolio.totalPnl, userPortfolio.totalTrades, userPortfolio.totalVolume)
+    }
+  }, [userPortfolio?.totalPnl, userPortfolio?.totalTrades, wsConnected, updatePnl, userPortfolio])
+
+  // Start user simulation once (fallback if WS not connected)
+  useEffect(() => {
+    if (!hasStartedSim && activeCompetition?.status === 'active' && !wsConnected) {
       simulateUsers()
       setHasStartedSim(true)
     }
-  }, [activeCompetition?.status, hasStartedSim, simulateUsers])
+  }, [activeCompetition?.status, hasStartedSim, simulateUsers, wsConnected])
 
   // Update timer
   useEffect(() => {
@@ -75,21 +99,35 @@ export function Competition() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const userRank = competitors.findIndex(c => c.address === address) + 1
+  // Use WebSocket leaderboard if available, otherwise local
+  const displayLeaderboard = wsConnected && liveLeaderboard.length > 0 
+    ? liveLeaderboard 
+    : competitors
+  
+  const displayTrades = wsConnected && liveTrades.length > 0
+    ? liveTrades.map(t => ({ trader: t.trader, action: t.side, amount: t.amount, time: t.timestamp }))
+    : []
+
+  const userRank = displayLeaderboard.findIndex(c => 
+    c.address === address || c.name?.includes(address?.slice(0, 6) || '')
+  ) + 1
 
   return (
     <div className="competition">
       <div className="competition-header">
         <h3>Trading Competition</h3>
         <div className="live-indicator">
-          <span className="live-dot" />
+          <span className={`live-dot ${wsConnected ? 'connected' : ''}`} />
           <span>{connectedUsers} online</span>
+          {wsConnected && <span className="ws-badge">Live</span>}
         </div>
       </div>
 
       {!activeCompetition && (
         <div className="competition-setup">
-          <p className="comp-desc">Start a timed trading challenge. Compete for the highest P&L!</p>
+          <p className="comp-desc">
+            Start a timed trading challenge. Compete against {wsConnected ? 'real traders' : 'bots'} for the highest P&L!
+          </p>
           <div className="duration-select">
             <label>Duration</label>
             <div className="duration-options">
@@ -149,8 +187,8 @@ export function Competition() {
 
           <div className="leaderboard-mini">
             <h4>Live Leaderboard</h4>
-            {competitors.slice(0, 5).map((c, i) => (
-              <div key={c.address} className={`leader-row ${c.address === address ? 'you' : ''}`}>
+            {displayLeaderboard.slice(0, 5).map((c: any, i: number) => (
+              <div key={c.address || c.id || i} className={`leader-row ${c.address === address ? 'you' : ''}`}>
                 <span className="leader-rank">#{i + 1}</span>
                 <span className="leader-name">{c.name}</span>
                 <span className={`leader-pnl ${c.pnl >= 0 ? 'positive' : 'negative'}`}>
@@ -158,18 +196,24 @@ export function Competition() {
                 </span>
               </div>
             ))}
+            {displayLeaderboard.length === 0 && (
+              <div className="empty-mini">Waiting for traders...</div>
+            )}
           </div>
 
           <div className="live-feed">
             <h4>Live Activity</h4>
             <div className="feed-list">
-              {liveActivity.slice(0, 5).map((a, i) => (
+              {(displayTrades.length > 0 ? displayTrades : liveTrades).slice(0, 5).map((a: any, i: number) => (
                 <div key={i} className="feed-item" style={{ animationDelay: `${i * 50}ms` }}>
                   <span className="feed-trader">{a.trader}</span>
-                  <span className="feed-action">{a.action}</span>
-                  <span className="feed-amount">{a.amount} ETH</span>
+                  <span className="feed-action">{a.action || a.side}</span>
+                  <span className="feed-amount">{a.amount?.toFixed(3)} ETH</span>
                 </div>
               ))}
+              {displayTrades.length === 0 && liveTrades.length === 0 && (
+                <div className="empty-mini">No activity yet</div>
+              )}
             </div>
           </div>
         </>
@@ -179,11 +223,11 @@ export function Competition() {
         <div className="competition-results">
           <h4>Competition Ended!</h4>
           <div className="winner-podium">
-            {competitors.slice(0, 3).map((c, i) => (
-              <div key={c.address} className={`podium-place place-${i + 1}`}>
+            {displayLeaderboard.slice(0, 3).map((c: any, i: number) => (
+              <div key={c.address || i} className={`podium-place place-${i + 1}`}>
                 <span className="podium-medal">{['🥇', '🥈', '🥉'][i]}</span>
                 <span className="podium-name">{c.name}</span>
-                <span className="podium-pnl">${c.pnl.toFixed(0)}</span>
+                <span className="podium-pnl">${c.pnl?.toFixed(0) || 0}</span>
               </div>
             ))}
           </div>

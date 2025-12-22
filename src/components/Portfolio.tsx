@@ -5,11 +5,10 @@ import { useAccount } from 'wagmi'
 type Tab = 'overview' | 'positions' | 'orders' | 'history'
 
 export function Portfolio() {
-  const { address, isConnected } = useAccount()
-  const { userPortfolio, currentPair, trades } = useOrderBookStore()
+  const { isConnected } = useAccount()
+  const { userPortfolio, currentPair } = useOrderBookStore()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   
-  const currentTrades = trades.get(currentPair.symbol) || []
   const positions = userPortfolio?.positions || []
   const openOrders = userPortfolio?.openOrders.filter(o => o.status === 'open') || []
   const tradeHistory = userPortfolio?.tradeHistory || []
