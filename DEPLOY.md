@@ -20,17 +20,16 @@
    - **Runtime**: `Node`
    - **Build Command**: 
      ```
-     curl -fsSL https://bun.sh/install | bash && ~/.bun/bin/bun install
+     npm install ws
      ```
    - **Start Command**: 
      ```
-     ~/.bun/bin/bun run server/websocket.ts
+     node server/websocket-node.js
      ```
    - **Instance Type**: Free (or Starter for better performance)
 
 5. Add Environment Variables:
    - `NODE_ENV` = `production`
-   - `PORT` = `10000` (Render assigns this automatically)
 
 6. Click **"Create Web Service"**
 

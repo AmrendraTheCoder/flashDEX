@@ -6,12 +6,10 @@ services:
   - type: web
     name: flashdex-ws
     runtime: node
-    buildCommand: "curl -fsSL https://bun.sh/install | bash && ~/.bun/bin/bun install"
-    startCommand: "~/.bun/bin/bun run server/websocket.ts"
+    buildCommand: "npm install ws"
+    startCommand: "node server/websocket-node.js"
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3001
     healthCheckPath: /health
     autoDeploy: true
