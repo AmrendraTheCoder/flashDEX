@@ -39,7 +39,7 @@ interface OrderBookData {
 // WebSocket URL - uses local server in dev, production URL in prod
 const WS_URL = import.meta.env.VITE_WS_URL || (
   import.meta.env.PROD 
-    ? 'wss://flashdex-ws.onrender.com/ws'
+    ? 'wss://flashdex.onrender.com/ws'
     : 'ws://localhost:3001/ws'
 )
 
