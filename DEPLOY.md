@@ -1,262 +1,395 @@
 # FlashDEX Deployment Guide
 
-## Architecture
-- **Frontend (Vercel)**: React app with Vite
-- **WebSocket Server (Render)**: Bun WebSocket server for real-time sync
-- **Smart Contracts**: Deployed on EVM-compatible chains
+Complete guide to deploy FlashDEX frontend and backend to production.
 
 ---
 
-## Smart Contract Deployment
+## 📋 Deployment Overview
 
-### Prerequisites
-1. Node.js 18+ installed
-2. Private key with ETH for gas fees
-3. RPC URL for target network
+| Component | Recommended Platform | Cost | Difficulty |
+|-----------|---------------------|------|------------|
+| **Frontend** | Vercel | Free | Easy |
+| **Backend** | Railway | Free tier | Easy |
+| **Alternative Backend** | Render | Free tier | Easy |
 
-### Setup
-```bash
-# Install dependencies
-npm install
+---
 
-# Copy environment file
-cp .env.example .env
+## 🎯 Quick Deploy (Recommended)
 
-# Edit .env with your private key and RPC URLs
+### Step 1: Deploy Backend to Railway (5 minutes)
+
+Railway is the easiest option with WebSocket support.
+
+1. **Go to Railway**: https://railway.app
+2. **Sign up** with GitHub
+3. **Create New Project** → "Deploy from GitHub repo"
+4. **Select your repo**
+5. **Configure**:
+   - Root Directory: `/` (leave empty)
+   - Start Command: `node server/index.js`
+6. **Add Environment Variables**:
+   ```
+   PORT=3001
+   PRIVATE_KEY=your_private_key (optional)
+   ENABLE_MARKET_MAKER=false
+   ```
+7. **Deploy** → Get your URL (e.g., `flashdex-backend.up.railway.app`)
+
+### Step 2: Deploy Frontend to Vercel (5 minutes)
+
+1. **Go to Vercel**: https://vercel.com
+2. **Sign up** with GitHub
+3. **Import Project** → Select your repo
+4. **Configure**:
+   - Framework: Vite
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+5. **Add Environment Variable**:
+   ```
+   VITE_WS_URL=wss://your-railway-url.up.railway.app/ws
+   ```
+6. **Deploy** → Get your URL (e.g., `flashdex.vercel.app`)
+
+### Step 3: Update Frontend Config
+
+After getting your Railway URL, update the environment variable in Vercel:
+```
+VITE_WS_URL=wss://flashdex-backend.up.railway.app/ws
 ```
 
-### Deploy Commands
-```bash
-# Compile contracts
-npm run compile
+**Done!** Your app is live.
 
-# Run tests
-npm run test:contracts
+---
 
-# Deploy to local Hardhat node (for testing)
-npm run node          # Terminal 1
-npm run deploy:local  # Terminal 2
+## 🚂 Option A: Railway (Recommended)
 
-# Deploy to testnets
-npm run deploy:sepolia       # Ethereum Sepolia
-npm run deploy:base-sepolia  # Base Sepolia
-npm run deploy:monad         # Monad Testnet
+### Why Railway?
+- ✅ WebSocket support out of the box
+- ✅ Free tier ($5 credit/month)
+- ✅ Auto-deploy from GitHub
+- ✅ Easy environment variables
+- ✅ Built-in monitoring
 
-# Verify contracts on block explorer
-npm run verify -- --network sepolia
-```
+### Step-by-Step
 
-### Deployed Contracts
-After deployment, you'll get addresses for:
-- **FlashETH** - ERC20 token (18 decimals)
-- **FlashUSDT** - ERC20 token (6 decimals)
-- **FlashBTC** - ERC20 token (8 decimals)
-- **FlashFaucet** - Token distribution with 24h cooldown
-- **FlashOracle** - Price feed oracle (Chainlink compatible)
-- **FlashVault** - Secure custody for hybrid DEX
-- **OrderBookV2** - Gas-optimized order book
+1. **Create Account**
+   - Go to https://railway.app
+   - Sign up with GitHub
 
-### Post-Deployment Configuration
-1. Update `scripts/verify.cjs` with deployed addresses
-2. Run verification: `npm run verify -- --network <network>`
-3. Grant OPERATOR_ROLE to matching engine address:
-```javascript
-// In Hardhat console or script
-const vault = await ethers.getContractAt("FlashVault", VAULT_ADDRESS);
-await vault.grantRole(await vault.OPERATOR_ROLE(), MATCHING_ENGINE_ADDRESS);
+2. **Create New Project**
+   ```
+   Dashboard → New Project → Deploy from GitHub repo
+   ```
+
+3. **Select Repository**
+   - Choose your FlashDEX repo
+   - Railway auto-detects Node.js
+
+4. **Configure Service**
+   - Click on the service
+   - Go to Settings tab
+   - Set Start Command:
+   ```bash
+   node server/index.js
+   ```
+
+5. **Set Environment Variables**
+   - Go to Variables tab
+   - Add:
+   ```
+   PORT=3001
+   NODE_ENV=production
+   ```
+
+6. **Generate Domain**
+   - Go to Settings → Networking
+   - Click "Generate Domain"
+   - You'll get: `your-app.up.railway.app`
+
+7. **Verify Deployment**
+   - Visit: `https://your-app.up.railway.app/health`
+   - Should return: `{"status":"ok",...}`
+
+### Railway Pricing
+- Free: $5/month credit (enough for small apps)
+- Hobby: $5/month
+- Pro: $20/month
+
+---
+
+## 🎨 Option B: Render
+
+### Why Render?
+- ✅ Generous free tier
+- ✅ WebSocket support
+- ✅ Auto-deploy from GitHub
+- ⚠️ Free tier sleeps after 15 min inactivity
+
+### Step-by-Step
+
+1. **Create Account**
+   - Go to https://render.com
+   - Sign up with GitHub
+
+2. **Create Web Service**
+   ```
+   Dashboard → New → Web Service
+   ```
+
+3. **Connect Repository**
+   - Select your GitHub repo
+   - Branch: main
+
+4. **Configure**
+   ```
+   Name: flashdex-backend
+   Region: Oregon (or closest)
+   Branch: main
+   Root Directory: (leave empty)
+   Runtime: Node
+   Build Command: npm install
+   Start Command: node server/index.js
+   ```
+
+5. **Set Environment Variables**
+   ```
+   PORT=10000
+   NODE_ENV=production
+   ```
+   (Render uses PORT=10000 by default)
+
+6. **Create Service**
+   - Click "Create Web Service"
+   - Wait for deployment
+
+7. **Get URL**
+   - Your URL: `https://flashdex-backend.onrender.com`
+   - WebSocket: `wss://flashdex-backend.onrender.com/ws`
+
+### render.yaml (Auto-deploy config)
+
+Already created in your repo:
+```yaml
+services:
+  - type: web
+    name: flashdex-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
 ```
 
 ---
 
-## Step 1: Deploy WebSocket Server to Render
+## ▲ Option C: Vercel (Frontend Only)
 
-### Option A: Using Render Dashboard
+Vercel is best for the frontend. For backend, use Railway or Render.
 
-1. Go to [render.com](https://render.com) and sign up/login
-2. Click **"New +"** → **"Web Service"**
-3. Connect your GitHub repository
-4. Configure the service:
-   - **Name**: `flashdex-ws`
-   - **Region**: Choose closest to your users
-   - **Branch**: `main`
-   - **Runtime**: `Node`
-   - **Build Command**: 
-     ```
-     npm install ws
-     ```
-   - **Start Command**: 
-     ```
-     node server/websocket-node.js
-     ```
-   - **Instance Type**: Free (or Starter for better performance)
+### Deploy Frontend
 
-5. Add Environment Variables:
-   - `NODE_ENV` = `production`
+1. **Install Vercel CLI** (optional)
+   ```bash
+   npm i -g vercel
+   ```
 
-6. Click **"Create Web Service"**
+2. **Deploy via CLI**
+   ```bash
+   vercel
+   ```
 
-7. Wait for deployment, then copy your URL (e.g., `https://flashdex-ws.onrender.com`)
+3. **Or via Dashboard**
+   - Go to https://vercel.com
+   - Import Git Repository
+   - Select your repo
+   - Configure:
+     - Framework: Vite
+     - Build: `npm run build`
+     - Output: `dist`
 
-### Option B: Using render.yaml (Blueprint)
+4. **Set Environment Variable**
+   ```
+   VITE_WS_URL=wss://your-backend-url/ws
+   ```
 
-1. Push code to GitHub
-2. Go to Render Dashboard → **"Blueprints"**
-3. Connect repository and select `render.yaml`
-4. Deploy
+### vercel.json (Already in repo)
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite"
+}
+```
 
 ---
 
-## Step 2: Deploy Frontend to Vercel
+## 🔧 Environment Variables Summary
 
-### Option A: Using Vercel Dashboard
+### Backend (Railway/Render)
+```env
+PORT=3001
+NODE_ENV=production
+PRIVATE_KEY=0x...        # Optional: for market maker bot
+ENABLE_MARKET_MAKER=false # Set true to enable bot
+```
 
-1. Go to [vercel.com](https://vercel.com) and sign up/login
-2. Click **"Add New..."** → **"Project"**
-3. Import your GitHub repository
-4. Configure:
-   - **Framework Preset**: Vite
-   - **Root Directory**: `monad-stream-order` (if in subdirectory)
-   - **Build Command**: `bun run build`
-   - **Output Directory**: `dist`
-   - **Install Command**: `bun install`
+### Frontend (Vercel)
+```env
+VITE_WS_URL=wss://your-backend-url.up.railway.app/ws
+```
 
-5. Add Environment Variables:
-   - `VITE_WS_URL` = `wss://flashdex-ws.onrender.com/ws` (your Render URL)
+---
 
-6. Click **"Deploy"**
+## 📝 Step-by-Step Deployment Checklist
 
-### Option B: Using Vercel CLI
+### Before Deploying
+
+- [ ] Test locally: `npm run dev:all`
+- [ ] Verify server works: `http://localhost:3001/health`
+- [ ] Build frontend: `npm run build`
+- [ ] Test build: `npm run preview`
+
+### Deploy Backend
+
+- [ ] Create Railway/Render account
+- [ ] Connect GitHub repo
+- [ ] Set start command: `node server/index.js`
+- [ ] Add environment variables
+- [ ] Deploy and get URL
+- [ ] Test: `https://your-url/health`
+- [ ] Test WebSocket: `wss://your-url/ws`
+
+### Deploy Frontend
+
+- [ ] Create Vercel account
+- [ ] Connect GitHub repo
+- [ ] Set `VITE_WS_URL` environment variable
+- [ ] Deploy
+- [ ] Test the live site
+
+### After Deploying
+
+- [ ] Test wallet connection
+- [ ] Test faucet claim
+- [ ] Test order placement
+- [ ] Verify WebSocket connection (check console)
+- [ ] Test mode toggle (Fast/On-Chain)
+
+---
+
+## 🔍 Troubleshooting
+
+### WebSocket Not Connecting
+
+1. Check backend is running:
+   ```
+   curl https://your-backend-url/health
+   ```
+
+2. Check CORS (backend allows all origins by default)
+
+3. Check WebSocket URL format:
+   - ✅ `wss://your-url.railway.app/ws`
+   - ❌ `https://your-url.railway.app/ws`
+
+### Backend Crashes
+
+1. Check logs in Railway/Render dashboard
+2. Common issues:
+   - Missing `ws` package: Run `npm install`
+   - Wrong start command: Use `node server/index.js`
+   - Port issue: Use `process.env.PORT`
+
+### Frontend Build Fails
+
+1. Check build locally: `npm run build`
+2. Common issues:
+   - TypeScript errors: Fix before deploying
+   - Missing dependencies: Check package.json
+
+### Free Tier Limits
+
+**Railway:**
+- $5/month credit
+- Enough for ~500 hours
+- No sleep on free tier
+
+**Render:**
+- Free tier sleeps after 15 min
+- First request takes ~30 sec to wake
+- Upgrade to paid for always-on
+
+---
+
+## 💰 Cost Comparison
+
+| Platform | Free Tier | Paid |
+|----------|-----------|------|
+| **Railway** | $5/month credit | $5/month hobby |
+| **Render** | Free (sleeps) | $7/month |
+| **Vercel** | Free (frontend) | $20/month pro |
+| **Fly.io** | Free tier | $1.94/month |
+
+### Recommended Setup (Free)
+- Frontend: Vercel (free)
+- Backend: Railway ($5 credit) or Render (free with sleep)
+
+### Recommended Setup (Paid, ~$12/month)
+- Frontend: Vercel (free)
+- Backend: Railway Hobby ($5/month)
+- Domain: Namecheap (~$7/year)
+
+---
+
+## 🚀 Quick Commands
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
+# Test locally
+npm run dev:all
 
-# Login
-vercel login
+# Build frontend
+npm run build
 
-# Deploy (from monad-stream-order directory)
-cd monad-stream-order
-vercel
+# Preview build
+npm run preview
 
-# For production
+# Deploy to Vercel (if CLI installed)
 vercel --prod
+
+# Check backend health
+curl https://your-backend-url/health
 ```
 
 ---
 
-## Step 3: Update WebSocket URL
-
-After deploying to Render, update the WebSocket URL:
-
-### Option 1: Environment Variable (Recommended)
-Add to Vercel Environment Variables:
-```
-VITE_WS_URL=wss://your-render-app.onrender.com/ws
-```
-
-### Option 2: Hardcode (Quick)
-Edit `src/hooks/useWebSocket.ts`:
-```typescript
-const WS_URL = import.meta.env.VITE_WS_URL || (
-  import.meta.env.PROD 
-    ? 'wss://YOUR-RENDER-URL.onrender.com/ws'  // ← Update this
-    : 'ws://localhost:3001/ws'
-)
-```
-
----
-
-## Environment Variables Summary
-
-### Vercel (Frontend)
-| Variable | Value | Description |
-|----------|-------|-------------|
-| `VITE_WS_URL` | `wss://flashdex-ws.onrender.com/ws` | WebSocket server URL |
-
-### Render (WebSocket Server)
-| Variable | Value | Description |
-|----------|-------|-------------|
-| `NODE_ENV` | `production` | Environment mode |
-| `PORT` | Auto-assigned | Server port |
-
----
-
-## Verify Deployment
-
-### Check WebSocket Server
-```bash
-curl https://flashdex-ws.onrender.com/health
-# Should return: {"status":"ok","clients":0,"trades":0}
-```
-
-### Check Frontend
-Visit your Vercel URL and:
-1. Open browser DevTools → Network tab
-2. Look for WebSocket connection to your Render URL
-3. Should show "WebSocket connected" in console
-
----
-
-## Custom Domain (Optional)
+## 📱 Custom Domain (Optional)
 
 ### Vercel
 1. Go to Project Settings → Domains
-2. Add your domain (e.g., `flashdex.yourdomain.com`)
-3. Update DNS records as instructed
+2. Add your domain
+3. Update DNS records
 
-### Render
-1. Go to Service Settings → Custom Domains
-2. Add domain (e.g., `ws.flashdex.yourdomain.com`)
+### Railway
+1. Go to Service Settings → Networking
+2. Add custom domain
 3. Update DNS records
 
 ---
 
-## Troubleshooting
+## 🎉 You're Done!
 
-### WebSocket Connection Failed
-- Check Render logs for errors
-- Verify CORS is not blocking (server allows all origins)
-- Ensure using `wss://` (not `ws://`) for production
+After deployment, your FlashDEX will be live at:
+- **Frontend**: `https://flashdex.vercel.app`
+- **Backend**: `https://flashdex-backend.up.railway.app`
+- **WebSocket**: `wss://flashdex-backend.up.railway.app/ws`
 
-### Build Failed on Vercel
-- Check Node version (use 18+)
-- Verify `bun` is available or use `npm` fallback
-- Check build logs for specific errors
-
-### Render Free Tier Sleeping
-- Free tier services sleep after 15 min inactivity
-- First request takes ~30s to wake up
-- Upgrade to Starter ($7/mo) for always-on
+Share the frontend URL with others to demo your DEX!
 
 ---
 
-## Quick Deploy Commands
+## 📞 Need Help?
 
-```bash
-# Local development
-bun run dev        # Frontend on :5173
-bun run server     # WebSocket on :3001
-
-# Build for production
-bun run build
-
-# Preview production build
-bun run preview
-```
-
----
-
-## Cost Estimate
-
-| Service | Tier | Cost |
-|---------|------|------|
-| Vercel | Hobby | Free |
-| Render | Free | Free |
-| **Total** | | **$0/month** |
-
-For production:
-| Service | Tier | Cost |
-|---------|------|------|
-| Vercel | Pro | $20/month |
-| Render | Starter | $7/month |
-| **Total** | | **$27/month** |
+- Railway Docs: https://docs.railway.app
+- Render Docs: https://render.com/docs
+- Vercel Docs: https://vercel.com/docs

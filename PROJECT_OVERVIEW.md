@@ -103,40 +103,41 @@ All contracts are live on Monad Testnet:
 
 ## ⚠️ What's NOT Working / Limitations
 
-### 1. WebSocket Server
-- **Issue**: The WebSocket server (`wss://flashdex-ws.onrender.com`) is not running
-- **Impact**: No real-time updates in Fast mode (uses polling instead)
-- **Workaround**: Data refreshes every few seconds automatically
+### 1. Production WebSocket Server
+- **Issue**: The production WebSocket server (`wss://flashdex-ws.onrender.com`) needs deployment
+- **Impact**: Production build won't have real-time updates until deployed
+- **Solution**: Run `npm run server` locally, or deploy to Render/Railway
 
-### 2. Off-Chain Matching Engine
-- **Issue**: Backend matching engine not deployed
-- **Impact**: Fast mode uses simulated data only
-- **Note**: On-Chain mode works fully with real contracts
+### 2. Market Maker Bot (Optional)
+- **Issue**: Requires private key with funded wallet
+- **Impact**: No automated liquidity without bot
+- **Note**: Set `ENABLE_MARKET_MAKER=true` and `PRIVATE_KEY` in .env
 
 ### 3. Price Oracle Updates
 - **Issue**: Oracle prices are static (set during deployment)
-- **Impact**: Prices don't reflect real market
-- **Note**: This is expected for testnet demo
+- **Impact**: On-chain prices don't reflect simulated prices
+- **Note**: Backend provides simulated prices for Fast mode
 
-### 4. Order Matching
+### 4. Order Matching On-Chain
 - **Issue**: On-chain orders need a counterparty
 - **Impact**: Your buy order needs someone's sell order to match
-- **Workaround**: Place both buy and sell orders yourself to test
+- **Workaround**: Use Fast mode for instant matching, or enable market maker bot
 
 ---
 
 ## 🚧 What's Left to Build
 
-### High Priority
+### Implemented ✅
 
-| Feature | Description | Difficulty |
-|---------|-------------|------------|
-| **Backend Server** | Real matching engine | Medium |
-| **WebSocket** | Real-time updates | Easy |
-| **Order Matching Bot** | Auto-match orders | Medium |
-| **Price Feed** | Live price updates | Medium |
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Backend Server** | Real matching engine | ✅ Done |
+| **WebSocket** | Real-time updates | ✅ Done |
+| **Order Matching** | Off-chain order matching | ✅ Done |
+| **Price Feed** | Simulated price updates | ✅ Done |
+| **Market Maker Bot** | Auto liquidity (optional) | ✅ Done |
 
-### Nice to Have
+### Nice to Have (Future)
 
 | Feature | Description | Difficulty |
 |---------|-------------|------------|
@@ -145,6 +146,7 @@ All contracts are live on Monad Testnet:
 | **Advanced Orders** | OCO, Trailing Stop | Hard |
 | **Mobile App** | React Native | Hard |
 | **Mainnet Deploy** | Production ready | Medium |
+| **Real Price Feeds** | Chainlink/Pyth integration | Medium |
 
 ---
 
@@ -310,14 +312,88 @@ OrderBookV2: 0x6BD87ee70b9333474333680c846AFD2Ca65BC33c
 # Install dependencies
 npm install
 
-# Start development server
+# Start frontend only
 npm run dev
+
+# Start backend server only
+npm run server
+
+# Start both frontend + backend together
+npm run dev:all
 
 # Build for production
 npm run build
 
 # Deploy contracts (if needed)
 npx hardhat run scripts/deploy.cjs --network monad
+```
+
+---
+
+## 🖥️ Backend Server
+
+The backend server provides:
+
+### Features
+1. **Real-time WebSocket** - Live price updates, order book, trades
+2. **Price Feed Service** - Simulated price movements with volatility
+3. **Order Book Service** - Full order matching engine
+4. **On-Chain Service** - Fetches real blockchain data
+5. **Market Maker Bot** - Optional automated trading (requires private key)
+
+### Running the Server
+
+```bash
+# Terminal 1: Start backend
+npm run server
+
+# Terminal 2: Start frontend
+npm run dev
+```
+
+Or run both together:
+```bash
+npm run dev:all
+```
+
+### Server Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `http://localhost:3001/health` | Health check |
+| `http://localhost:3001/api/prices` | Current prices |
+| `http://localhost:3001/api/orderbook?pair=FETH/FUSDT` | Order book |
+| `http://localhost:3001/api/trades` | Recent trades |
+| `http://localhost:3001/api/onchain` | On-chain data |
+| `ws://localhost:3001/ws` | WebSocket connection |
+
+### WebSocket Messages
+
+**Incoming (from server):**
+- `welcome` - Initial state on connect
+- `price_update` - Price changes
+- `orderbook_update` - Order book changes
+- `new_trade` - New trade executed
+- `onchain_update` - Blockchain data refresh
+
+**Outgoing (to server):**
+- `identify` - Identify with wallet address
+- `place_order` - Place a new order
+- `subscribe` - Subscribe to channels
+- `get_orderbook` - Request order book snapshot
+- `get_trades` - Request trades snapshot
+
+### Environment Variables
+
+```env
+# Required for on-chain features
+PRIVATE_KEY=your_wallet_private_key
+
+# Optional: Enable market maker bot
+ENABLE_MARKET_MAKER=true
+
+# Server port (default: 3001)
+PORT=3001
 ```
 
 ---

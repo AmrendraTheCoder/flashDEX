@@ -8,7 +8,7 @@ interface WebSocketMessage {
 
 interface LiveTrade {
   id: string
-  trader: string
+  trader?: string
   pair: string
   side: 'buy' | 'sell'
   price: number
@@ -25,10 +25,21 @@ interface LiveUser {
   volume: number
 }
 
-// Set your Render WebSocket URL here after deployment
+interface PriceData {
+  [pair: string]: number
+}
+
+interface OrderBookData {
+  [pair: string]: {
+    bids: Array<{ price: number; amount: number; total: number }>
+    asks: Array<{ price: number; amount: number; total: number }>
+  }
+}
+
+// WebSocket URL - uses local server in dev, production URL in prod
 const WS_URL = import.meta.env.VITE_WS_URL || (
   import.meta.env.PROD 
-    ? 'wss://flashdex-ws.onrender.com/ws'  // Update this after Render deployment
+    ? 'wss://flashdex-ws.onrender.com/ws'
     : 'ws://localhost:3001/ws'
 )
 
@@ -39,19 +50,21 @@ export function useWebSocket() {
   const [connectedUsers, setConnectedUsers] = useState(1)
   const [liveLeaderboard, setLiveLeaderboard] = useState<LiveUser[]>([])
   const [liveTrades, setLiveTrades] = useState<LiveTrade[]>([])
+  const [livePrices, setLivePrices] = useState<PriceData>({})
+  const [liveOrderBook, setLiveOrderBook] = useState<OrderBookData>({})
   const [userId, setUserId] = useState<string | null>(null)
   
-  const { updateLeaderboard } = useOrderBookStore()
+  const { updateLeaderboard, addTrade, currentPair } = useOrderBookStore()
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
     
     try {
-      console.log('Connecting to WebSocket:', WS_URL)
+      console.log('🔌 Connecting to WebSocket:', WS_URL)
       const ws = new WebSocket(WS_URL)
       
       ws.onopen = () => {
-        console.log('WebSocket connected')
+        console.log('✅ WebSocket connected')
         setIsConnected(true)
       }
       
@@ -65,6 +78,12 @@ export function useWebSocket() {
               setConnectedUsers(message.payload.connectedUsers)
               setLiveLeaderboard(message.payload.leaderboard || [])
               setLiveTrades(message.payload.recentTrades || [])
+              if (message.payload.prices) {
+                setLivePrices(message.payload.prices)
+              }
+              if (message.payload.orderBook) {
+                setLiveOrderBook(message.payload.orderBook)
+              }
               break
               
             case 'user_joined':
@@ -86,7 +105,46 @@ export function useWebSocket() {
               break
               
             case 'new_trade':
-              setLiveTrades(prev => [message.payload, ...prev].slice(0, 50))
+              const trade = message.payload
+              setLiveTrades(prev => [trade, ...prev].slice(0, 50))
+              // Add to store if it matches current pair
+              if (trade.pair === currentPair.symbol) {
+                addTrade(currentPair.symbol, {
+                  id: trade.id,
+                  price: trade.price,
+                  amount: trade.amount,
+                  side: trade.side,
+                  timestamp: trade.timestamp,
+                })
+              }
+              break
+              
+            case 'price_update':
+              setLivePrices(message.payload.prices)
+              break
+              
+            case 'orderbook_update':
+              setLiveOrderBook(message.payload)
+              break
+              
+            case 'orderbook_snapshot':
+              setLiveOrderBook(prev => ({
+                ...prev,
+                [currentPair.symbol]: message.payload,
+              }))
+              break
+              
+            case 'trades_snapshot':
+              setLiveTrades(message.payload)
+              break
+              
+            case 'onchain_update':
+              // On-chain data update - can be used for hybrid mode
+              console.log('📦 On-chain data received')
+              break
+              
+            case 'order_result':
+              console.log('📝 Order result:', message.payload)
               break
               
             case 'stats':
@@ -99,13 +157,13 @@ export function useWebSocket() {
       }
       
       ws.onclose = () => {
-        console.log('WebSocket disconnected')
+        console.log('❌ WebSocket disconnected')
         setIsConnected(false)
         wsRef.current = null
         
         // Reconnect after 3 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('Attempting to reconnect...')
+          console.log('🔄 Attempting to reconnect...')
           connect()
         }, 3000)
       }
@@ -117,10 +175,9 @@ export function useWebSocket() {
       wsRef.current = ws
     } catch (e) {
       console.error('WebSocket connection error:', e)
-      // Fallback to simulation mode
       setConnectedUsers(Math.floor(Math.random() * 10) + 1)
     }
-  }, [updateLeaderboard])
+  }, [updateLeaderboard, addTrade, currentPair.symbol])
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -152,8 +209,29 @@ export function useWebSocket() {
     send('trade', trade)
   }, [send])
 
+  const placeOrder = useCallback((order: {
+    pair: string
+    side: 'buy' | 'sell'
+    price: number
+    amount: number
+  }) => {
+    send('place_order', order)
+  }, [send])
+
   const updatePnl = useCallback((pnl: number, trades: number, volume: number) => {
     send('update_pnl', { pnl, trades, volume })
+  }, [send])
+
+  const subscribe = useCallback((channels: string[]) => {
+    send('subscribe', { channels })
+  }, [send])
+
+  const getOrderBook = useCallback((pair: string) => {
+    send('get_orderbook', { pair })
+  }, [send])
+
+  const getTrades = useCallback(() => {
+    send('get_trades', {})
   }, [send])
 
   useEffect(() => {
@@ -176,10 +254,16 @@ export function useWebSocket() {
     connectedUsers,
     liveLeaderboard,
     liveTrades,
+    livePrices,
+    liveOrderBook,
     userId,
     identify,
     broadcastTrade,
+    placeOrder,
     updatePnl,
-    send
+    subscribe,
+    getOrderBook,
+    getTrades,
+    send,
   }
 }

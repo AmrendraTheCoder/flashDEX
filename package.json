@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:all": "bun run dev & bun run server",
-    "server": "bun run server/websocket.ts",
+    "dev:all": "npm run server & npm run dev",
+    "server": "node server/index.js",
+    "server:bun": "bun run server/websocket.ts",
     "server:node": "node server/websocket-node.js",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

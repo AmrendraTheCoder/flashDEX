@@ -1,15 +1,17 @@
 # Render Blueprint for FlashDEX
-# Deploy WebSocket server on Render
+# Deploy backend server on Render
 
 services:
-  # WebSocket Server
+  # Backend Server (WebSocket + API + Matching Engine)
   - type: web
-    name: flashdex-ws
+    name: flashdex-backend
     runtime: node
-    buildCommand: "npm install ws"
-    startCommand: "node server/websocket-node.js"
+    buildCommand: "npm install"
+    startCommand: "node server/index.js"
     envVars:
       - key: NODE_ENV
         value: production
+      - key: ENABLE_MARKET_MAKER
+        value: "false"
     healthCheckPath: /health
     autoDeploy: true
