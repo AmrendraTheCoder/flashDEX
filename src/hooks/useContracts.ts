@@ -284,8 +284,8 @@ export function useAllBalances() {
     FBTC: {
       wallet: fbtcWallet as bigint | undefined,
       vault: fbtcVault as bigint | undefined,
-      walletFormatted: fbtcWallet ? formatUnits(fbtcWallet as bigint, 18) : '0',
-      vaultFormatted: fbtcVault ? formatUnits(fbtcVault as bigint, 18) : '0',
+      walletFormatted: fbtcWallet ? formatUnits(fbtcWallet as bigint, 8) : '0',
+      vaultFormatted: fbtcVault ? formatUnits(fbtcVault as bigint, 8) : '0',
     },
     isConnected: !!address,
   }), [address, fethWallet, fusdtWallet, fbtcWallet, fethVault, fusdtVault, fbtcVault])

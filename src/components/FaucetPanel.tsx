@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
+import { toast } from 'sonner'
 import { useFaucetStatus, useFaucetClaim, useAllBalances } from '../hooks/useContracts'
 import { TOKENS } from '../config/contracts'
 
@@ -9,10 +10,20 @@ import { TOKENS } from '../config/contracts'
 export function FaucetPanel() {
   const { isConnected } = useAccount()
   const { canClaim, timeUntilClaim } = useFaucetStatus()
-  const { claim, isClaiming, isClaimed } = useFaucetClaim()
+  const { claim, isClaiming, isClaimed, hash } = useFaucetClaim()
   const balances = useAllBalances()
   
   const [countdown, setCountdown] = useState<string>('')
+  
+  // Show success toast when claim is confirmed
+  useEffect(() => {
+    if (isClaimed && hash) {
+      toast.success('Tokens claimed successfully! 🎉', {
+        description: 'Your wallet has been funded with testnet tokens.',
+        duration: 5000,
+      })
+    }
+  }, [isClaimed, hash])
   
   // Format countdown timer
   useEffect(() => {
@@ -70,7 +81,7 @@ export function FaucetPanel() {
         <div className="faucet-token">
           <span className="token-icon">{TOKENS.FETH.icon}</span>
           <span className="token-name">{TOKENS.FETH.symbol}</span>
-          <span className="token-amount">1.0</span>
+          <span className="token-amount">10.0</span>
         </div>
         <div className="faucet-token">
           <span className="token-icon">{TOKENS.FUSDT.icon}</span>
@@ -80,7 +91,7 @@ export function FaucetPanel() {
         <div className="faucet-token">
           <span className="token-icon">{TOKENS.FBTC.icon}</span>
           <span className="token-name">{TOKENS.FBTC.symbol}</span>
-          <span className="token-amount">0.1</span>
+          <span className="token-amount">0.5</span>
         </div>
       </div>
       

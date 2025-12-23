@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { exportTradesToCSV } from '../utils/export'
 import { soundManager } from '../utils/sounds'
 import { FaucetPanel } from './FaucetPanel'
+import { VaultPanel } from './VaultPanel'
 
 export function Sidebar() {
   const { 
@@ -326,6 +327,9 @@ export function Sidebar() {
           {sidebarContent === 'wallet' && (
             <div className="wallet-panel">
               <FaucetPanel />
+              <div style={{ marginTop: '24px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
+                <VaultPanel />
+              </div>
             </div>
           )}
         </div>

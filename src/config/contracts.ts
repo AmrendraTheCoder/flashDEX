@@ -5,15 +5,16 @@ import { type Address } from 'viem'
  * Update these after deployment
  */
 export const CONTRACTS = {
-  // Token contracts
-  FETH: '0x0000000000000000000000000000000000000001' as Address, // Flash ETH - update after deployment
-  FUSDT: '0x0000000000000000000000000000000000000002' as Address, // Flash USDT - update after deployment
-  FBTC: '0x0000000000000000000000000000000000000003' as Address, // Flash BTC - update after deployment
+  // Token contracts - Deployed on Monad Testnet
+  FETH: '0x35895ffaBB85255232c3575137591277Fb1BC433' as Address, // Flash ETH
+  FUSDT: '0xB52c6e73c071AB63B18b6bAF9604B84f0DD71081' as Address, // Flash USDT
+  FBTC: '0xCEa63bF96B1F830bA950d478265e1bdde12063A9' as Address, // Flash BTC
   
-  // Core contracts
-  VAULT: '0x0000000000000000000000000000000000000004' as Address, // FlashVault - update after deployment
-  FAUCET: '0x0000000000000000000000000000000000000005' as Address, // FlashFaucet - update after deployment
-  ORACLE: '0x0000000000000000000000000000000000000006' as Address, // FlashOracle - update after deployment
+  // Core contracts - Deployed on Monad Testnet
+  VAULT: '0xeDc61C052e92935E07366b25B4D082AF16AC0476' as Address, // FlashVault
+  FAUCET: '0xa6E696983469b4D7bF80DEabec310840AAcb981F' as Address, // FlashFaucet
+  ORACLE: '0xE7CFE8395735140A22a40430E6922334dCB37c55' as Address, // FlashOracle
+  ORDERBOOK: '0x6BD87ee70b9333474333680c846AFD2Ca65BC33c' as Address, // OrderBookV2
 } as const
 
 /**
@@ -38,7 +39,7 @@ export const TOKENS = {
     address: CONTRACTS.FBTC,
     symbol: 'FBTC',
     name: 'Flash BTC',
-    decimals: 18,
+    decimals: 8,
     icon: '₿',
   },
 } as const
@@ -58,7 +59,7 @@ export const TRADING_PAIRS_CONFIG = [
     symbol: 'BTC/USDT',
     baseToken: CONTRACTS.FBTC,
     quoteToken: CONTRACTS.FUSDT,
-    baseDecimals: 18,
+    baseDecimals: 8,
     quoteDecimals: 6,
   },
 ] as const
@@ -353,6 +354,174 @@ export const ORACLE_ABI = [
       { name: 'pairHash', type: 'bytes32', indexed: true },
       { name: 'price', type: 'uint256', indexed: false },
       { name: 'timestamp', type: 'uint256', indexed: false },
+    ],
+  },
+] as const
+
+/**
+ * OrderBookV2 ABI for on-chain order book
+ */
+export const ORDERBOOK_ABI = [
+  // Read functions
+  {
+    name: 'getOrderBook',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'depth', type: 'uint256' }],
+    outputs: [
+      { name: 'bidPrices', type: 'uint96[]' },
+      { name: 'bidAmounts', type: 'uint96[]' },
+      { name: 'askPrices', type: 'uint96[]' },
+      { name: 'askAmounts', type: 'uint96[]' },
+    ],
+  },
+  {
+    name: 'getUserOrders',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'user', type: 'address' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple[]',
+        components: [
+          { name: 'id', type: 'uint64' },
+          { name: 'trader', type: 'address' },
+          { name: 'timestamp', type: 'uint48' },
+          { name: 'orderType', type: 'uint8' },
+          { name: 'status', type: 'uint8' },
+          { name: 'isBuy', type: 'bool' },
+          { name: 'price', type: 'uint96' },
+          { name: 'amount', type: 'uint96' },
+          { name: 'filledAmount', type: 'uint96' },
+          { name: 'stopPrice', type: 'uint96' },
+          { name: 'visibleAmount', type: 'uint96' },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'getRecentTrades',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'count', type: 'uint256' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple[]',
+        components: [
+          { name: 'id', type: 'uint64' },
+          { name: 'buyOrderId', type: 'uint64' },
+          { name: 'sellOrderId', type: 'uint64' },
+          { name: 'price', type: 'uint96' },
+          { name: 'amount', type: 'uint96' },
+          { name: 'timestamp', type: 'uint48' },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'getStats',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [
+      { name: '_totalVolume', type: 'uint256' },
+      { name: '_totalTrades', type: 'uint256' },
+      { name: '_lastPrice', type: 'uint96' },
+      { name: '_buyLevels', type: 'uint256' },
+      { name: '_sellLevels', type: 'uint256' },
+    ],
+  },
+  {
+    name: 'orders',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'orderId', type: 'uint64' }],
+    outputs: [
+      { name: 'id', type: 'uint64' },
+      { name: 'trader', type: 'address' },
+      { name: 'timestamp', type: 'uint48' },
+      { name: 'orderType', type: 'uint8' },
+      { name: 'status', type: 'uint8' },
+      { name: 'isBuy', type: 'bool' },
+      { name: 'price', type: 'uint96' },
+      { name: 'amount', type: 'uint96' },
+      { name: 'filledAmount', type: 'uint96' },
+      { name: 'stopPrice', type: 'uint96' },
+      { name: 'visibleAmount', type: 'uint96' },
+    ],
+  },
+  // Write functions
+  {
+    name: 'placeOrder',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'price', type: 'uint96' },
+      { name: 'amount', type: 'uint96' },
+      { name: 'isBuy', type: 'bool' },
+      { name: 'orderType', type: 'uint8' },
+      { name: 'stopPrice', type: 'uint96' },
+      { name: 'visibleAmount', type: 'uint96' },
+    ],
+    outputs: [{ name: 'orderId', type: 'uint64' }],
+  },
+  {
+    name: 'cancelOrder',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'orderId', type: 'uint64' }],
+    outputs: [],
+  },
+  {
+    name: 'batchPlaceOrders',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'prices', type: 'uint96[]' },
+      { name: 'amounts', type: 'uint96[]' },
+      { name: 'isBuys', type: 'bool[]' },
+    ],
+    outputs: [{ name: 'orderIds', type: 'uint64[]' }],
+  },
+  // Events
+  {
+    name: 'OrderPlaced',
+    type: 'event',
+    inputs: [
+      { name: 'id', type: 'uint64', indexed: true },
+      { name: 'trader', type: 'address', indexed: true },
+      { name: 'isBuy', type: 'bool', indexed: false },
+      { name: 'price', type: 'uint96', indexed: false },
+      { name: 'amount', type: 'uint96', indexed: false },
+      { name: 'orderType', type: 'uint8', indexed: false },
+    ],
+  },
+  {
+    name: 'OrderFilled',
+    type: 'event',
+    inputs: [
+      { name: 'orderId', type: 'uint64', indexed: true },
+      { name: 'tradeId', type: 'uint64', indexed: true },
+      { name: 'fillAmount', type: 'uint96', indexed: false },
+      { name: 'fillPrice', type: 'uint96', indexed: false },
+    ],
+  },
+  {
+    name: 'OrderCancelled',
+    type: 'event',
+    inputs: [{ name: 'id', type: 'uint64', indexed: true }],
+  },
+  {
+    name: 'TradeExecuted',
+    type: 'event',
+    inputs: [
+      { name: 'id', type: 'uint64', indexed: true },
+      { name: 'buyer', type: 'address', indexed: false },
+      { name: 'seller', type: 'address', indexed: false },
+      { name: 'price', type: 'uint96', indexed: false },
+      { name: 'amount', type: 'uint96', indexed: false },
     ],
   },
 ] as const

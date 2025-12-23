@@ -1,9 +1,21 @@
 import { useOrderBookStore } from '../store/orderBookStore'
+import { useAllOraclePrices } from '../hooks/useOracle'
+import { useOrderBookStats } from '../hooks/useOrderBook'
 import { WalletConnect } from './WalletConnect'
 import { Toolbar } from './Toolbar'
 
 export function Header() {
   const { pairs, currentPair, setCurrentPair, tps, totalVolume } = useOrderBookStore()
+  const { prices: oraclePrices } = useAllOraclePrices()
+  const { totalVolume: onChainVolume, totalTrades } = useOrderBookStats()
+
+  // Map oracle pair names to display pairs
+  const getOraclePrice = (base: string) => {
+    if (!oraclePrices || Object.keys(oraclePrices).length === 0) return 0
+    if (base === 'ETH') return (oraclePrices as Record<string, number>)['FETH/FUSDT'] || 0
+    if (base === 'BTC') return (oraclePrices as Record<string, number>)['FBTC/FUSDT'] || 0
+    return 0
+  }
 
   return (
     <header className="header">
@@ -31,6 +43,8 @@ export function Header() {
         {pairs.map(pair => {
           const isActive = currentPair.symbol === pair.symbol
           const priceChange = pair.change24h
+          const oraclePrice = getOraclePrice(pair.base)
+          const displayPrice = oraclePrice > 0 ? oraclePrice : pair.basePrice
           return (
             <button
               key={pair.symbol}
@@ -44,11 +58,12 @@ export function Header() {
               </div>
               <div className="pair-info">
                 <span className="pair-name">{pair.symbol}</span>
-                <span className="pair-price">${pair.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="pair-price">${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <span className={`pair-change ${priceChange >= 0 ? 'up' : 'down'}`}>
                 {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
               </span>
+              {oraclePrice > 0 && <span className="oracle-badge">🔗</span>}
             </button>
           )
         })}
@@ -60,8 +75,12 @@ export function Header() {
           <span className="stat-label">TPS</span>
         </div>
         <div className="header-stat">
-          <span className="stat-value">${(totalVolume / 1000000).toFixed(2)}M</span>
+          <span className="stat-value">${((totalVolume + onChainVolume) / 1000000).toFixed(2)}M</span>
           <span className="stat-label">Volume</span>
+        </div>
+        <div className="header-stat">
+          <span className="stat-value">{totalTrades}</span>
+          <span className="stat-label">Trades</span>
         </div>
       </div>
 
