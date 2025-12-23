@@ -4,7 +4,7 @@ import { parseUnits, formatUnits, type Address } from 'viem'
 import { toast } from 'sonner'
 import { 
   CONTRACTS, 
-  TOKENS, 
+  TOKENS as _TOKENS, 
   ERC20_ABI, 
   VAULT_ABI, 
   FAUCET_ABI 
@@ -295,7 +295,7 @@ export function useAllBalances() {
  * Full deposit flow with approval check
  */
 export function useDepositWithApproval() {
-  const { approve, isApproving, isApproved } = useApproveToken()
+  const { approve, isApproving, isApproved: _isApproved } = useApproveToken()
   const { deposit, isDepositing, isDeposited } = useDeposit()
   
   const depositWithApproval = useCallback(async (

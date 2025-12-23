@@ -65,7 +65,7 @@ export function useDepositEvents(userAddress: Address | undefined) {
         const { args } = log as any
         if (!args || !userAddress) return
         
-        const { user, token, amount, newBalance } = args
+        const { user, token, amount, newBalance: _newBalance } = args
         
         // Only show for current user
         if ((user as string).toLowerCase() !== userAddress.toLowerCase()) return
