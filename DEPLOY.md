@@ -29,10 +29,12 @@ Railway is the easiest option with WebSocket support.
    - Start Command: `node server/index.js`
 6. **Add Environment Variables**:
    ```
-   PORT=3001
-   PRIVATE_KEY=your_private_key (optional)
+   NODE_ENV=production
+   PRIVATE_KEY=your_private_key (optional, for market maker)
    ENABLE_MARKET_MAKER=false
    ```
+   
+   ⚠️ **Do NOT set PORT** - Railway assigns it automatically!
 7. **Deploy** → Get your URL (e.g., `flashdex-backend.up.railway.app`)
 
 ### Step 2: Deploy Frontend to Vercel (5 minutes)
@@ -97,9 +99,10 @@ VITE_WS_URL=wss://flashdex-backend.up.railway.app/ws
    - Go to Variables tab
    - Add:
    ```
-   PORT=3001
    NODE_ENV=production
    ```
+   
+   ⚠️ **Do NOT set PORT** - Railway assigns it automatically!
 
 6. **Generate Domain**
    - Go to Settings → Networking
@@ -153,10 +156,10 @@ VITE_WS_URL=wss://flashdex-backend.up.railway.app/ws
 
 5. **Set Environment Variables**
    ```
-   PORT=10000
    NODE_ENV=production
    ```
-   (Render uses PORT=10000 by default)
+   
+   ⚠️ **Do NOT set PORT** - Render assigns it automatically!
 
 6. **Create Service**
    - Click "Create Web Service"
@@ -228,11 +231,12 @@ Vercel is best for the frontend. For backend, use Railway or Render.
 
 ### Backend (Railway/Render)
 ```env
-PORT=3001
 NODE_ENV=production
 PRIVATE_KEY=0x...        # Optional: for market maker bot
 ENABLE_MARKET_MAKER=false # Set true to enable bot
 ```
+
+⚠️ **Do NOT set PORT manually** - Railway/Render assign it automatically via `process.env.PORT`
 
 ### Frontend (Vercel)
 ```env

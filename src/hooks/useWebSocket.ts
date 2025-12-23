@@ -109,12 +109,15 @@ export function useWebSocket() {
               setLiveTrades(prev => [trade, ...prev].slice(0, 50))
               // Add to store if it matches current pair
               if (trade.pair === currentPair.symbol) {
-                addTrade(currentPair.symbol, {
-                  id: trade.id,
+                addTrade({
+                  id: trade.id || `ws-${Date.now()}`,
+                  pair: trade.pair,
                   price: trade.price,
                   amount: trade.amount,
                   side: trade.side,
                   timestamp: trade.timestamp,
+                  buyer: trade.buyer || 'unknown',
+                  seller: trade.seller || 'unknown',
                 })
               }
               break
