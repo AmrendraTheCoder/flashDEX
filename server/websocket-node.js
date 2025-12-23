@@ -1,5 +1,5 @@
-const http = require('http')
-const { WebSocketServer, WebSocket } = require('ws')
+import http from 'http'
+import { WebSocketServer, WebSocket } from 'ws'
 
 // Store connected clients
 const clients = new Map()
