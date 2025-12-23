@@ -1,12 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title MonadStreamOrder V2 - Gas Optimized Order Book
  * @notice Highly optimized for Monad's 10,000 TPS capability
  * @dev Uses packed structs, bitmap for order status, and batch operations
+ * 
+ * SECURITY FEATURES:
+ * - ReentrancyGuard on state-changing functions
+ * - Packed structs for gas efficiency
+ * - Circular buffer for O(1) trade storage
+ * 
+ * GAS OPTIMIZATIONS:
+ * - Packed Order struct (2 slots vs 5)
+ * - Unchecked increments in loops
+ * - Memory caching for storage reads
+ * - Circular buffer eliminates array shifts
  */
-contract OrderBookV2 {
+contract OrderBookV2 is ReentrancyGuard {
     // ============ PACKED STRUCTS (Gas Optimization) ============
     
     // Packed into 2 slots (64 bytes) instead of 5 slots
@@ -86,7 +99,7 @@ contract OrderBookV2 {
         uint8 orderType,
         uint96 stopPrice,
         uint96 visibleAmount
-    ) external returns (uint64 orderId) {
+    ) external nonReentrant returns (uint64 orderId) {
         require(amount > 0, "Amount=0");
         require(price > 0 || orderType == 1, "Price=0"); // Market orders can have 0 price
         
@@ -138,7 +151,7 @@ contract OrderBookV2 {
         uint96 stopPrice,
         uint96 amount,
         bool isBuy
-    ) external returns (uint64 limitOrderId, uint64 stopOrderId) {
+    ) external nonReentrant returns (uint64 limitOrderId, uint64 stopOrderId) {
         // Place limit order
         limitOrderId = nextOrderId++;
         orders[limitOrderId] = Order({

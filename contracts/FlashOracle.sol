@@ -313,6 +313,7 @@ contract FlashOracle is Ownable {
     
     /**
      * @dev Fetch price from Chainlink aggregator
+     * @notice Includes comprehensive validation for data freshness and validity
      */
     function _getChainlinkPrice(address aggregator) 
         internal 
@@ -329,6 +330,7 @@ contract FlashOracle is Ownable {
         
         // Validate round data
         if (answer <= 0) revert InvalidPrice();
+        if (updatedAt == 0) revert StalePrice(); // Extra safety check
         if (answeredInRound < roundId) revert StalePrice();
         if (block.timestamp - updatedAt > stalenessThreshold) revert StalePrice();
         

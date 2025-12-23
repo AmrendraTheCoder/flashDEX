@@ -119,7 +119,7 @@ contract OrderBook {
     }
 
     // Internal matching functions
-    function _matchBuyOrder(uint256 buyOrderId, uint256 maxPrice, uint256 amount, address buyer) internal returns (uint256) {
+    function _matchBuyOrder(uint256 /* buyOrderId */, uint256 maxPrice, uint256 amount, address buyer) internal returns (uint256) {
         uint256 remaining = amount;
         
         for (uint256 i = 0; i < sellOrderIds.length && remaining > 0; i++) {
@@ -147,7 +147,7 @@ contract OrderBook {
         return remaining;
     }
 
-    function _matchSellOrder(uint256 sellOrderId, uint256 minPrice, uint256 amount, address seller) internal returns (uint256) {
+    function _matchSellOrder(uint256 /* sellOrderId */, uint256 minPrice, uint256 amount, address seller) internal returns (uint256) {
         uint256 remaining = amount;
         
         for (uint256 i = 0; i < buyOrderIds.length && remaining > 0; i++) {

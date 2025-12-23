@@ -3,6 +3,68 @@
 ## Architecture
 - **Frontend (Vercel)**: React app with Vite
 - **WebSocket Server (Render)**: Bun WebSocket server for real-time sync
+- **Smart Contracts**: Deployed on EVM-compatible chains
+
+---
+
+## Smart Contract Deployment
+
+### Prerequisites
+1. Node.js 18+ installed
+2. Private key with ETH for gas fees
+3. RPC URL for target network
+
+### Setup
+```bash
+# Install dependencies
+npm install
+
+# Copy environment file
+cp .env.example .env
+
+# Edit .env with your private key and RPC URLs
+```
+
+### Deploy Commands
+```bash
+# Compile contracts
+npm run compile
+
+# Run tests
+npm run test:contracts
+
+# Deploy to local Hardhat node (for testing)
+npm run node          # Terminal 1
+npm run deploy:local  # Terminal 2
+
+# Deploy to testnets
+npm run deploy:sepolia       # Ethereum Sepolia
+npm run deploy:base-sepolia  # Base Sepolia
+npm run deploy:monad         # Monad Testnet
+
+# Verify contracts on block explorer
+npm run verify -- --network sepolia
+```
+
+### Deployed Contracts
+After deployment, you'll get addresses for:
+- **FlashETH** - ERC20 token (18 decimals)
+- **FlashUSDT** - ERC20 token (6 decimals)
+- **FlashBTC** - ERC20 token (8 decimals)
+- **FlashFaucet** - Token distribution with 24h cooldown
+- **FlashOracle** - Price feed oracle (Chainlink compatible)
+- **FlashVault** - Secure custody for hybrid DEX
+- **OrderBookV2** - Gas-optimized order book
+
+### Post-Deployment Configuration
+1. Update `scripts/verify.cjs` with deployed addresses
+2. Run verification: `npm run verify -- --network <network>`
+3. Grant OPERATOR_ROLE to matching engine address:
+```javascript
+// In Hardhat console or script
+const vault = await ethers.getContractAt("FlashVault", VAULT_ADDRESS);
+await vault.grantRole(await vault.OPERATOR_ROLE(), MATCHING_ENGINE_ADDRESS);
+```
 
 ---
 

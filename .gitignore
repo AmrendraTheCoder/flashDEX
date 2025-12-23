@@ -39,3 +39,10 @@ public/icons/*.png
 
 # OS files
 Thumbs.db
+
+# Hardhat
+cache
+artifacts
+typechain-types
+coverage
+coverage.json
