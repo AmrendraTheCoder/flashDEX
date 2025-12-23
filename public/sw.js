@@ -30,10 +30,19 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+// Check if URL is cacheable (only http/https)
+function isCacheableRequest(request) {
+  const url = new URL(request.url)
+  return url.protocol === 'http:' || url.protocol === 'https:'
+}
+
 // Fetch event - network first, fallback to cache
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return
+  
+  // Skip non-cacheable requests (chrome-extension, etc.)
+  if (!isCacheableRequest(event.request)) return
   
   // Skip WebSocket requests
   if (event.request.url.includes('/ws')) return
@@ -47,16 +56,15 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response before caching
-        const responseClone = response.clone()
-        
-        // Cache successful responses
-        if (response.status === 200) {
+        // Only cache successful responses from cacheable URLs
+        if (response.status === 200 && isCacheableRequest(event.request)) {
+          const responseClone = response.clone()
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone)
+          }).catch(() => {
+            // Ignore cache errors silently
           })
         }
-        
         return response
       })
       .catch(() => {
@@ -85,7 +93,6 @@ self.addEventListener('sync', (event) => {
 })
 
 async function syncTrades() {
-  // Get pending trades from IndexedDB and sync
   console.log('Syncing pending trades...')
 }
 
@@ -95,8 +102,8 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: data.body || 'New trading activity',
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-72.png',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/'

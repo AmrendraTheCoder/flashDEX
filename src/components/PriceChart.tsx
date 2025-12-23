@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createChart, ColorType } from 'lightweight-charts'
 import type { Time } from 'lightweight-charts'
 import { useOrderBookStore } from '../store/orderBookStore'
+import { useUIStore } from '../store/uiStore'
+import { useOnChainTrades } from '../hooks/useOrderBook'
 
 type Timeframe = '1m' | '5m' | '15m' | '1h'
 
@@ -14,38 +16,59 @@ const TIMEFRAME_SECONDS: Record<Timeframe, number> = {
 
 export function PriceChart() {
   const chartContainerRef = useRef<HTMLDivElement>(null)
-  const chartRef = useRef<any>(null)
+  const chartRef = useRef<ReturnType<typeof createChart> | null>(null)
   const candleSeriesRef = useRef<any>(null)
   const volumeSeriesRef = useRef<any>(null)
+  const lastUpdateRef = useRef<number>(0)
   const [timeframe, setTimeframe] = useState<Timeframe>('1m')
   const [chartData, setChartData] = useState<any[]>([])
   const { currentPair, trades } = useOrderBookStore()
+  const { useOnChain } = useUIStore()
   
-  const currentTrades = trades.get(currentPair.symbol) || []
+  // On-chain trades
+  const { trades: onChainTrades } = useOnChainTrades(50)
+  
+  // Format on-chain trades
+  const formattedOnChainTrades = onChainTrades.map(t => ({
+    id: `chain-${t.id}`,
+    price: t.price,
+    amount: t.amount,
+    timestamp: t.timestamp,
+    side: t.buyOrderId > t.sellOrderId ? 'buy' : 'sell' as 'buy' | 'sell',
+  }))
+  
+  const offChainTrades = trades.get(currentPair.symbol) || []
+  const currentTrades = useOnChain ? formattedOnChainTrades : offChainTrades
   const basePrice = currentPair.basePrice
 
   // Generate realistic initial candles based on timeframe
-  const generateInitialCandles = useCallback((tf: Timeframe) => {
+  const generateInitialCandles = useCallback((tf: Timeframe, startPrice: number) => {
     const now = Math.floor(Date.now() / 1000)
     const interval = TIMEFRAME_SECONDS[tf]
     const candles = []
     const volumes = []
-    let price = basePrice * 0.98
+    let price = startPrice * 0.95
     
     const candleCount = tf === '1h' ? 48 : tf === '15m' ? 96 : tf === '5m' ? 144 : 200
     
     for (let i = candleCount; i >= 0; i--) {
       const time = Math.floor((now - i * interval) / interval) * interval
-      const volatility = tf === '1h' ? 0.008 : tf === '15m' ? 0.005 : tf === '5m' ? 0.003 : 0.002
-      const trend = Math.sin(i / 20) * volatility
+      const volatility = tf === '1h' ? 0.012 : tf === '15m' ? 0.008 : tf === '5m' ? 0.005 : 0.003
+      const trend = Math.sin(i / 15) * volatility * 0.5
       const noise = (Math.random() - 0.5) * volatility * 2
       const change = trend + noise
       
       const open = price
       price = price * (1 + change)
+      
+      // Gradually move towards current price
+      if (i < 20) {
+        price = price + (startPrice - price) * 0.05
+      }
+      
       const close = price
-      const high = Math.max(open, close) * (1 + Math.random() * volatility)
-      const low = Math.min(open, close) * (1 - Math.random() * volatility)
+      const high = Math.max(open, close) * (1 + Math.random() * volatility * 0.5)
+      const low = Math.min(open, close) * (1 - Math.random() * volatility * 0.5)
       const volume = (50 + Math.random() * 200) * (interval / 60)
       
       candles.push({ time, open, high, low, close })
@@ -57,7 +80,7 @@ export function PriceChart() {
     }
     
     return { candles, volumes }
-  }, [basePrice])
+  }, [])
 
   // Initialize chart
   useEffect(() => {
@@ -112,8 +135,7 @@ export function PriceChart() {
     candleSeriesRef.current = candleSeries
     volumeSeriesRef.current = volumeSeries
 
-    // Set initial data based on timeframe
-    const { candles, volumes } = generateInitialCandles(timeframe)
+    const { candles, volumes } = generateInitialCandles(timeframe, basePrice)
     setChartData(candles)
     candleSeries.setData(candles as { time: Time; open: number; high: number; low: number; close: number }[])
     volumeSeries.setData(volumes as { time: Time; value: number; color: string }[])
@@ -130,58 +152,71 @@ export function PriceChart() {
       window.removeEventListener('resize', handleResize)
       chart.remove()
     }
-  }, [currentPair.symbol, timeframe, generateInitialCandles])
+  }, [currentPair.symbol, timeframe, generateInitialCandles, basePrice])
 
-  // Update chart with new trades
+  // Update chart with new trades from simulation
   useEffect(() => {
-    if (!candleSeriesRef.current || !volumeSeriesRef.current || currentTrades.length === 0) return
+    if (!candleSeriesRef.current || !volumeSeriesRef.current) return
+    if (currentTrades.length === 0) return
 
     const latestTrade = currentTrades[0]
     if (!latestTrade) return
+    
+    // Debounce updates
+    const now = Date.now()
+    if (now - lastUpdateRef.current < 100) return
+    lastUpdateRef.current = now
 
-    const now = Math.floor(Date.now() / 1000)
-    const candleTime = Math.floor(now / 60) * 60
+    const tradeTime = Math.floor(latestTrade.timestamp / 1000)
+    const candleTime = Math.floor(tradeTime / 60) * 60
 
     setChartData(prev => {
+      if (prev.length === 0) return prev
+      
       const newData = [...prev]
       const lastCandle = newData[newData.length - 1]
 
       if (lastCandle && lastCandle.time === candleTime) {
         // Update existing candle
-        lastCandle.high = Math.max(lastCandle.high, latestTrade.price)
-        lastCandle.low = Math.min(lastCandle.low, latestTrade.price)
-        lastCandle.close = latestTrade.price
+        const updatedCandle = {
+          ...lastCandle,
+          high: Math.max(lastCandle.high, latestTrade.price),
+          low: Math.min(lastCandle.low, latestTrade.price),
+          close: latestTrade.price,
+        }
+        newData[newData.length - 1] = updatedCandle
+        candleSeriesRef.current?.update(updatedCandle)
       } else if (!lastCandle || candleTime > lastCandle.time) {
         // Add new candle
         const open = lastCandle ? lastCandle.close : latestTrade.price
-        newData.push({
+        const newCandle = {
           time: candleTime,
           open,
           high: Math.max(open, latestTrade.price),
           low: Math.min(open, latestTrade.price),
           close: latestTrade.price,
-        })
+        }
+        newData.push(newCandle)
+        candleSeriesRef.current?.update(newCandle)
       }
 
-      // Update chart
-      if (candleSeriesRef.current) {
-        candleSeriesRef.current.update(newData[newData.length - 1])
-      }
-      if (volumeSeriesRef.current) {
-        volumeSeriesRef.current.update({
-          time: candleTime,
-          value: latestTrade.amount * 100,
-          color: latestTrade.side === 'buy' ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'
-        })
-      }
+      // Update volume
+      volumeSeriesRef.current?.update({
+        time: candleTime,
+        value: latestTrade.amount * 50,
+        color: latestTrade.side === 'buy' ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'
+      })
 
       return newData.slice(-300)
     })
   }, [currentTrades])
 
+  // Calculate price change
   const lastCandle = chartData[chartData.length - 1]
   const prevCandle = chartData[chartData.length - 2]
-  const priceChange = lastCandle && prevCandle ? ((lastCandle.close - prevCandle.close) / prevCandle.close * 100) : 0
+  const priceChange = lastCandle && prevCandle 
+    ? ((lastCandle.close - prevCandle.close) / prevCandle.close * 100) 
+    : 0
 
   return (
     <div className="price-chart">
@@ -190,6 +225,9 @@ export function PriceChart() {
           <span className="chart-price">${basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           <span className={`chart-change ${priceChange >= 0 ? 'up' : 'down'}`}>
             {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
+          </span>
+          <span className={`chart-mode-badge ${useOnChain ? 'on-chain' : ''}`}>
+            {useOnChain ? '🔗' : '⚡'}
           </span>
         </div>
         <div className="chart-controls">

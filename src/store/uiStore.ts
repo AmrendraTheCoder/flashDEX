@@ -23,6 +23,11 @@ interface UIState {
   darkMode: boolean
   toggleDarkMode: () => void
   
+  // Trading Mode (On-Chain vs Fast)
+  useOnChain: boolean
+  setUseOnChain: (value: boolean) => void
+  toggleOnChain: () => void
+  
   // Sidebar
   sidebarOpen: boolean
   sidebarContent: 'alerts' | 'settings' | 'achievements' | 'history' | 'wallet' | null
@@ -77,6 +82,11 @@ export const useUIStore = create<UIState>()(
       darkMode: true, // Default to dark mode
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
       
+      // Trading mode - persisted
+      useOnChain: false,
+      setUseOnChain: (value) => set({ useOnChain: value }),
+      toggleOnChain: () => set((state) => ({ useOnChain: !state.useOnChain })),
+      
       sidebarOpen: false,
       sidebarContent: null,
       openSidebar: (content) => set({ sidebarOpen: true, sidebarContent: content }),
@@ -119,6 +129,7 @@ export const useUIStore = create<UIState>()(
       name: 'monad-ui-settings',
       partialize: (state) => ({
         darkMode: state.darkMode,
+        useOnChain: state.useOnChain,
         soundEnabled: state.soundEnabled,
         slippage: state.slippage,
         shortcutsEnabled: state.shortcutsEnabled,

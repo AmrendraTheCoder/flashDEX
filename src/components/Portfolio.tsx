@@ -56,148 +56,218 @@ export function Portfolio() {
   const formatTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const formatDate = (ts: number) => new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' })
 
+  const tabConfig = [
+    { id: 'overview' as Tab, icon: '📊', label: 'Overview' },
+    { id: 'positions' as Tab, icon: '💼', label: 'Positions' },
+    { id: 'orders' as Tab, icon: '📝', label: 'Orders', badge: activeOnChainOrders.length },
+    { id: 'history' as Tab, icon: '📜', label: 'History' },
+  ]
+
   return (
     <div className="portfolio-container">
-      <div className="portfolio-header-section">
-        <div className="portfolio-title-row">
-          <h2>💼 Portfolio</h2>
+      {/* Header */}
+      <div className="pf-header">
+        <div className="pf-header-left">
+          <h2 className="pf-title">💼 Portfolio</h2>
           {isConnected && address && (
-            <span className="wallet-badge">{address.slice(0, 6)}...{address.slice(-4)}</span>
+            <div className="pf-wallet-chip">
+              <span className="pf-wallet-dot"></span>
+              <span>{address.slice(0, 6)}...{address.slice(-4)}</span>
+            </div>
           )}
+        </div>
+        <div className="pf-header-right">
+          <span className="pf-network-badge">🟣 Monad Testnet</span>
         </div>
       </div>
 
       {!isConnected ? (
-        <div className="portfolio-empty-state">
-          <div className="empty-icon-large">👛</div>
+        <div className="pf-empty-state">
+          <div className="pf-empty-icon">👛</div>
           <h3>Connect Your Wallet</h3>
-          <p>Connect to Monad Testnet to view your portfolio</p>
+          <p>Connect to Monad Testnet to view your portfolio and start trading</p>
         </div>
       ) : (
         <>
-          {/* Main Value Cards */}
-          <div className="portfolio-value-cards">
-            <div className="value-card primary gradient-card">
-              <div className="value-card-header">
-                <span className="value-icon">💎</span>
-                <span className="value-label">Total Portfolio</span>
-              </div>
-              <div className="value-amount large">${onChainValue.totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              <div className="value-breakdown">
-                <span>Wallet: ${onChainValue.walletUsd.toFixed(2)}</span>
-                <span>Vault: ${onChainValue.vaultUsd.toFixed(2)}</span>
+          {/* Stats Row */}
+          <div className="pf-stats-row">
+            <div className="pf-stat-card pf-stat-primary">
+              <div className="pf-stat-icon">💎</div>
+              <div className="pf-stat-content">
+                <span className="pf-stat-label">Total Value</span>
+                <span className="pf-stat-value">${onChainValue.totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <div className="pf-stat-breakdown">
+                  <span>🔓 ${onChainValue.walletUsd.toFixed(2)}</span>
+                  <span>🏦 ${onChainValue.vaultUsd.toFixed(2)}</span>
+                </div>
               </div>
             </div>
-            
-            <div className="value-card">
-              <div className="value-card-header">
-                <span className="value-icon">📊</span>
-                <span className="value-label">On-Chain Stats</span>
+            <div className="pf-stat-card">
+              <div className="pf-stat-icon">📊</div>
+              <div className="pf-stat-content">
+                <span className="pf-stat-label">Total Trades</span>
+                <span className="pf-stat-value">{onChainTrades}</span>
               </div>
-              <div className="value-amount">{onChainTrades}</div>
-              <div className="value-subtext">Total Trades</div>
             </div>
-            
-            <div className="value-card">
-              <div className="value-card-header">
-                <span className="value-icon">📝</span>
-                <span className="value-label">Active Orders</span>
+            <div className="pf-stat-card">
+              <div className="pf-stat-icon">📝</div>
+              <div className="pf-stat-content">
+                <span className="pf-stat-label">Active Orders</span>
+                <span className="pf-stat-value">{activeOnChainOrders.length}</span>
               </div>
-              <div className="value-amount">{activeOnChainOrders.length}</div>
-              <div className="value-subtext">On-chain orders</div>
+            </div>
+            <div className="pf-stat-card">
+              <div className="pf-stat-icon">🪙</div>
+              <div className="pf-stat-content">
+                <span className="pf-stat-label">Assets</span>
+                <span className="pf-stat-value">3</span>
+              </div>
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="portfolio-tabs">
-            {(['overview', 'positions', 'orders', 'history'] as Tab[]).map(tab => (
-              <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-                {tab === 'overview' && '📊'}{tab === 'positions' && '💼'}{tab === 'orders' && '📝'}{tab === 'history' && '📜'}
-                <span>{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
-                {tab === 'orders' && activeOnChainOrders.length > 0 && <span className="tab-badge">{activeOnChainOrders.length}</span>}
+          <div className="pf-tabs">
+            {tabConfig.map(tab => (
+              <button 
+                key={tab.id} 
+                className={`pf-tab ${activeTab === tab.id ? 'active' : ''}`} 
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <span className="pf-tab-icon">{tab.icon}</span>
+                <span className="pf-tab-label">{tab.label}</span>
+                {tab.badge && tab.badge > 0 && <span className="pf-tab-badge">{tab.badge}</span>}
               </button>
             ))}
           </div>
 
           {/* Tab Content */}
-          <div className="portfolio-tab-content">
+          <div className="pf-tab-content">
             {activeTab === 'overview' && (
-              <div className="overview-content">
+              <div className="pf-overview">
                 {/* Token Holdings */}
-                <div className="holdings-section">
-                  <h4>🪙 Token Holdings</h4>
-                  <div className="holdings-grid">
-                    <div className="holding-card">
-                      <div className="holding-header">
-                        <span className="token-icon">⟠</span>
-                        <div className="token-info">
-                          <span className="token-name">Flash ETH</span>
-                          <span className="token-symbol">FETH</span>
+                <div className="pf-section">
+                  <div className="pf-section-header">
+                    <h4>🪙 Token Holdings</h4>
+                  </div>
+                  <div className="pf-holdings-grid">
+                    {/* FETH Card */}
+                    <div className="pf-token-card pf-token-eth">
+                      <div className="pf-token-header">
+                        <div className="pf-token-icon-wrap eth">⟠</div>
+                        <div className="pf-token-meta">
+                          <span className="pf-token-name">Flash ETH</span>
+                          <span className="pf-token-symbol">FETH</span>
                         </div>
-                        <span className="token-price">${ethPrice.toLocaleString()}</span>
+                        <div className="pf-token-price">${ethPrice.toLocaleString()}</div>
                       </div>
-                      <div className="holding-balances">
-                        <div className="balance-line"><span>Wallet</span><span>{onChainValue.feth.wallet.toFixed(4)}</span></div>
-                        <div className="balance-line"><span>Vault</span><span>{onChainValue.feth.vault.toFixed(4)}</span></div>
-                        <div className="balance-line total"><span>Total</span><span>{onChainValue.feth.total.toFixed(4)}</span></div>
+                      <div className="pf-token-balances">
+                        <div className="pf-balance-row">
+                          <span className="pf-balance-label">🔓 Wallet</span>
+                          <span className="pf-balance-value">{onChainValue.feth.wallet.toFixed(4)}</span>
+                        </div>
+                        <div className="pf-balance-row">
+                          <span className="pf-balance-label">🏦 Vault</span>
+                          <span className="pf-balance-value">{onChainValue.feth.vault.toFixed(4)}</span>
+                        </div>
+                        <div className="pf-balance-row pf-balance-total">
+                          <span className="pf-balance-label">Total</span>
+                          <span className="pf-balance-value">{onChainValue.feth.total.toFixed(4)}</span>
+                        </div>
                       </div>
-                      <div className="holding-value">${(onChainValue.feth.total * ethPrice).toFixed(2)}</div>
+                      <div className="pf-token-footer">
+                        <span className="pf-token-usd">${(onChainValue.feth.total * ethPrice).toFixed(2)}</span>
+                      </div>
                     </div>
 
-                    <div className="holding-card">
-                      <div className="holding-header">
-                        <span className="token-icon">💵</span>
-                        <div className="token-info">
-                          <span className="token-name">Flash USDT</span>
-                          <span className="token-symbol">FUSDT</span>
+                    {/* FUSDT Card */}
+                    <div className="pf-token-card pf-token-usdt">
+                      <div className="pf-token-header">
+                        <div className="pf-token-icon-wrap usdt">💵</div>
+                        <div className="pf-token-meta">
+                          <span className="pf-token-name">Flash USDT</span>
+                          <span className="pf-token-symbol">FUSDT</span>
                         </div>
-                        <span className="token-price">$1.00</span>
+                        <div className="pf-token-price">$1.00</div>
                       </div>
-                      <div className="holding-balances">
-                        <div className="balance-line"><span>Wallet</span><span>{onChainValue.fusdt.wallet.toLocaleString()}</span></div>
-                        <div className="balance-line"><span>Vault</span><span>{onChainValue.fusdt.vault.toLocaleString()}</span></div>
-                        <div className="balance-line total"><span>Total</span><span>{onChainValue.fusdt.total.toLocaleString()}</span></div>
+                      <div className="pf-token-balances">
+                        <div className="pf-balance-row">
+                          <span className="pf-balance-label">🔓 Wallet</span>
+                          <span className="pf-balance-value">{onChainValue.fusdt.wallet.toLocaleString()}</span>
+                        </div>
+                        <div className="pf-balance-row">
+                          <span className="pf-balance-label">🏦 Vault</span>
+                          <span className="pf-balance-value">{onChainValue.fusdt.vault.toLocaleString()}</span>
+                        </div>
+                        <div className="pf-balance-row pf-balance-total">
+                          <span className="pf-balance-label">Total</span>
+                          <span className="pf-balance-value">{onChainValue.fusdt.total.toLocaleString()}</span>
+                        </div>
                       </div>
-                      <div className="holding-value">${onChainValue.fusdt.total.toFixed(2)}</div>
+                      <div className="pf-token-footer">
+                        <span className="pf-token-usd">${onChainValue.fusdt.total.toFixed(2)}</span>
+                      </div>
                     </div>
 
-                    <div className="holding-card">
-                      <div className="holding-header">
-                        <span className="token-icon">₿</span>
-                        <div className="token-info">
-                          <span className="token-name">Flash BTC</span>
-                          <span className="token-symbol">FBTC</span>
+                    {/* FBTC Card */}
+                    <div className="pf-token-card pf-token-btc">
+                      <div className="pf-token-header">
+                        <div className="pf-token-icon-wrap btc">₿</div>
+                        <div className="pf-token-meta">
+                          <span className="pf-token-name">Flash BTC</span>
+                          <span className="pf-token-symbol">FBTC</span>
                         </div>
-                        <span className="token-price">${btcPrice.toLocaleString()}</span>
+                        <div className="pf-token-price">${btcPrice.toLocaleString()}</div>
                       </div>
-                      <div className="holding-balances">
-                        <div className="balance-line"><span>Wallet</span><span>{onChainValue.fbtc.wallet.toFixed(6)}</span></div>
-                        <div className="balance-line"><span>Vault</span><span>{onChainValue.fbtc.vault.toFixed(6)}</span></div>
-                        <div className="balance-line total"><span>Total</span><span>{onChainValue.fbtc.total.toFixed(6)}</span></div>
+                      <div className="pf-token-balances">
+                        <div className="pf-balance-row">
+                          <span className="pf-balance-label">🔓 Wallet</span>
+                          <span className="pf-balance-value">{onChainValue.fbtc.wallet.toFixed(6)}</span>
+                        </div>
+                        <div className="pf-balance-row">
+                          <span className="pf-balance-label">🏦 Vault</span>
+                          <span className="pf-balance-value">{onChainValue.fbtc.vault.toFixed(6)}</span>
+                        </div>
+                        <div className="pf-balance-row pf-balance-total">
+                          <span className="pf-balance-label">Total</span>
+                          <span className="pf-balance-value">{onChainValue.fbtc.total.toFixed(6)}</span>
+                        </div>
                       </div>
-                      <div className="holding-value">${(onChainValue.fbtc.total * btcPrice).toFixed(2)}</div>
+                      <div className="pf-token-footer">
+                        <span className="pf-token-usd">${(onChainValue.fbtc.total * btcPrice).toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Quick Actions */}
-                <div className="quick-actions-section">
-                  <h4>⚡ Quick Actions</h4>
-                  <div className="quick-actions-grid">
-                    <div className="action-card">
-                      <span className="action-icon">🚰</span>
-                      <span className="action-label">Claim from Faucet</span>
-                      <span className="action-desc">Get free testnet tokens</span>
+                <div className="pf-section">
+                  <div className="pf-section-header">
+                    <h4>⚡ Quick Actions</h4>
+                  </div>
+                  <div className="pf-actions-grid">
+                    <div className="pf-action-card">
+                      <div className="pf-action-icon">🚰</div>
+                      <div className="pf-action-content">
+                        <span className="pf-action-title">Claim Tokens</span>
+                        <span className="pf-action-desc">Get free testnet tokens</span>
+                      </div>
+                      <span className="pf-action-arrow">→</span>
                     </div>
-                    <div className="action-card">
-                      <span className="action-icon">🏦</span>
-                      <span className="action-label">Deposit to Vault</span>
-                      <span className="action-desc">Enable trading</span>
+                    <div className="pf-action-card">
+                      <div className="pf-action-icon">🏦</div>
+                      <div className="pf-action-content">
+                        <span className="pf-action-title">Deposit to Vault</span>
+                        <span className="pf-action-desc">Enable on-chain trading</span>
+                      </div>
+                      <span className="pf-action-arrow">→</span>
                     </div>
-                    <div className="action-card">
-                      <span className="action-icon">📈</span>
-                      <span className="action-label">Place Order</span>
-                      <span className="action-desc">Trade on-chain</span>
+                    <div className="pf-action-card">
+                      <div className="pf-action-icon">📈</div>
+                      <div className="pf-action-content">
+                        <span className="pf-action-title">Place Order</span>
+                        <span className="pf-action-desc">Trade on-chain</span>
+                      </div>
+                      <span className="pf-action-arrow">→</span>
                     </div>
                   </div>
                 </div>
@@ -205,9 +275,9 @@ export function Portfolio() {
             )}
 
             {activeTab === 'positions' && (
-              <div className="positions-content">
+              <div className="pf-positions">
                 {positions.length > 0 ? (
-                  <div className="positions-grid">
+                  <div className="pf-positions-grid">
                     {positions.map((pos, i) => {
                       const pair = pairs.find(p => p.symbol === pos.pair)
                       const currentPrice = pair?.basePrice || pos.entryPrice
@@ -215,117 +285,201 @@ export function Portfolio() {
                       const pnlPercent = (unrealizedPnl / (pos.entryPrice * pos.amount)) * 100
                       
                       return (
-                        <div key={i} className="position-card">
-                          <div className="position-card-header">
-                            <div className="position-pair-info">
-                              <span className="position-pair">{pos.pair}</span>
-                              <span className={`position-side-badge ${pos.side}`}>{pos.side.toUpperCase()}</span>
+                        <div key={i} className={`pf-position-card ${pos.side}`}>
+                          <div className="pf-position-header">
+                            <div className="pf-position-pair">
+                              <span className="pf-position-symbol">{pos.pair}</span>
+                              <span className={`pf-position-side ${pos.side}`}>{pos.side.toUpperCase()}</span>
                             </div>
-                            <div className={`position-pnl-badge ${unrealizedPnl >= 0 ? 'positive' : 'negative'}`}>
+                            <div className={`pf-position-pnl ${unrealizedPnl >= 0 ? 'positive' : 'negative'}`}>
                               {unrealizedPnl >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%
                             </div>
                           </div>
-                          <div className="position-details-grid">
-                            <div className="position-detail"><span>Size</span><span>{pos.amount.toFixed(4)}</span></div>
-                            <div className="position-detail"><span>Entry</span><span>${pos.entryPrice.toFixed(2)}</span></div>
-                            <div className="position-detail"><span>Current</span><span>${currentPrice.toFixed(2)}</span></div>
-                            <div className="position-detail"><span>P&L</span><span className={unrealizedPnl >= 0 ? 'positive' : 'negative'}>${unrealizedPnl.toFixed(2)}</span></div>
+                          <div className="pf-position-body">
+                            <div className="pf-position-stat">
+                              <span className="pf-position-label">Size</span>
+                              <span className="pf-position-value">{pos.amount.toFixed(4)}</span>
+                            </div>
+                            <div className="pf-position-stat">
+                              <span className="pf-position-label">Entry</span>
+                              <span className="pf-position-value">${pos.entryPrice.toFixed(2)}</span>
+                            </div>
+                            <div className="pf-position-stat">
+                              <span className="pf-position-label">Current</span>
+                              <span className="pf-position-value">${currentPrice.toFixed(2)}</span>
+                            </div>
+                            <div className="pf-position-stat">
+                              <span className="pf-position-label">P&L</span>
+                              <span className={`pf-position-value ${unrealizedPnl >= 0 ? 'positive' : 'negative'}`}>
+                                ${unrealizedPnl.toFixed(2)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )
                     })}
                   </div>
                 ) : (
-                  <div className="empty-state-card"><span className="empty-icon">💼</span><h4>No Open Positions</h4><p>Start trading to build your portfolio</p></div>
+                  <div className="pf-empty-card">
+                    <div className="pf-empty-icon">💼</div>
+                    <h4>No Open Positions</h4>
+                    <p>Start trading to build your portfolio</p>
+                  </div>
                 )}
               </div>
             )}
 
             {activeTab === 'orders' && (
-              <div className="orders-content">
-                <h4>🔗 On-Chain Orders</h4>
-                {activeOnChainOrders.length > 0 ? (
-                  <div className="orders-list">
-                    {activeOnChainOrders.map((order) => (
-                      <div key={order.id} className={`order-card ${order.isBuy ? 'buy' : 'sell'}`}>
-                        <div className="order-main">
-                          <span className={`order-side ${order.isBuy ? 'buy' : 'sell'}`}>{order.isBuy ? 'BUY' : 'SELL'}</span>
-                          <span className="order-price">${order.price.toFixed(2)}</span>
-                          <span className="order-amount">{order.amount.toFixed(4)}</span>
-                          <span className="order-status">{order.status}</span>
-                          <span className="order-time">{formatTime(order.timestamp)}</span>
-                          <button className="cancel-btn" onClick={() => handleCancelOnChainOrder(order.id)} disabled={isCancelling}>✕</button>
-                        </div>
-                        {order.filledAmount > 0 && (
-                          <div className="order-fill-bar">
-                            <div className="fill-progress" style={{ width: `${(order.filledAmount / order.amount) * 100}%` }} />
-                            <span className="fill-text">{((order.filledAmount / order.amount) * 100).toFixed(0)}% filled</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+              <div className="pf-orders">
+                <div className="pf-section">
+                  <div className="pf-section-header">
+                    <h4>🔗 On-Chain Orders</h4>
+                    <span className="pf-section-badge">{activeOnChainOrders.length}</span>
                   </div>
-                ) : (
-                  <div className="empty-state-card"><span className="empty-icon">📝</span><h4>No Active Orders</h4><p>Place on-chain orders to see them here</p></div>
-                )}
+                  {activeOnChainOrders.length > 0 ? (
+                    <div className="pf-orders-list">
+                      {activeOnChainOrders.map((order) => (
+                        <div key={order.id} className={`pf-order-card ${order.isBuy ? 'buy' : 'sell'}`}>
+                          <div className="pf-order-left">
+                            <span className={`pf-order-side ${order.isBuy ? 'buy' : 'sell'}`}>
+                              {order.isBuy ? '↗ BUY' : '↘ SELL'}
+                            </span>
+                            <span className="pf-order-status">{order.status}</span>
+                          </div>
+                          <div className="pf-order-center">
+                            <span className="pf-order-amount">{order.amount.toFixed(4)}</span>
+                            <span className="pf-order-at">@</span>
+                            <span className="pf-order-price">${order.price.toFixed(2)}</span>
+                          </div>
+                          <div className="pf-order-right">
+                            <span className="pf-order-time">{formatTime(order.timestamp)}</span>
+                            <button 
+                              className="pf-order-cancel" 
+                              onClick={() => handleCancelOnChainOrder(order.id)} 
+                              disabled={isCancelling}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          {order.filledAmount > 0 && (
+                            <div className="pf-order-progress">
+                              <div className="pf-progress-bar">
+                                <div 
+                                  className="pf-progress-fill" 
+                                  style={{ width: `${(order.filledAmount / order.amount) * 100}%` }} 
+                                />
+                              </div>
+                              <span className="pf-progress-text">
+                                {((order.filledAmount / order.amount) * 100).toFixed(0)}% filled
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="pf-empty-card small">
+                      <div className="pf-empty-icon">📝</div>
+                      <h4>No Active Orders</h4>
+                      <p>Place on-chain orders to see them here</p>
+                    </div>
+                  )}
+                </div>
 
                 {openOrders.length > 0 && (
-                  <>
-                    <h4 style={{ marginTop: '20px' }}>⚡ Off-Chain Orders</h4>
-                    <div className="orders-list">
+                  <div className="pf-section">
+                    <div className="pf-section-header">
+                      <h4>⚡ Off-Chain Orders</h4>
+                      <span className="pf-section-badge">{openOrders.length}</span>
+                    </div>
+                    <div className="pf-orders-list">
                       {openOrders.map((order, i) => (
-                        <div key={i} className={`order-card ${order.side}`}>
-                          <div className="order-main">
-                            <span className={`order-side ${order.side}`}>{order.side.toUpperCase()}</span>
-                            <span className="order-price">${order.price.toFixed(2)}</span>
-                            <span className="order-amount">{order.amount.toFixed(4)}</span>
-                            <span className="order-type">{order.type}</span>
+                        <div key={i} className={`pf-order-card ${order.side}`}>
+                          <div className="pf-order-left">
+                            <span className={`pf-order-side ${order.side}`}>
+                              {order.side === 'buy' ? '↗ BUY' : '↘ SELL'}
+                            </span>
+                            <span className="pf-order-type">{order.type}</span>
+                          </div>
+                          <div className="pf-order-center">
+                            <span className="pf-order-amount">{order.amount.toFixed(4)}</span>
+                            <span className="pf-order-at">@</span>
+                            <span className="pf-order-price">${order.price.toFixed(2)}</span>
                           </div>
                         </div>
                       ))}
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             )}
 
             {activeTab === 'history' && (
-              <div className="history-content">
+              <div className="pf-history">
                 {filledOnChainOrders.length > 0 && (
-                  <>
-                    <h4>🔗 On-Chain Fills</h4>
-                    <div className="history-list">
+                  <div className="pf-section">
+                    <div className="pf-section-header">
+                      <h4>🔗 On-Chain Fills</h4>
+                      <span className="pf-section-badge">{filledOnChainOrders.length}</span>
+                    </div>
+                    <div className="pf-history-list">
                       {filledOnChainOrders.map((order) => (
-                        <div key={order.id} className="history-item">
-                          <span className={`history-side ${order.isBuy ? 'buy' : 'sell'}`}>{order.isBuy ? '↗ BUY' : '↘ SELL'}</span>
-                          <span className="history-amount">{order.filledAmount.toFixed(4)}</span>
-                          <span className="history-price">@ ${order.price.toFixed(2)}</span>
-                          <span className="history-time">{formatDate(order.timestamp)}</span>
+                        <div key={order.id} className={`pf-history-item ${order.isBuy ? 'buy' : 'sell'}`}>
+                          <div className="pf-history-left">
+                            <span className={`pf-history-side ${order.isBuy ? 'buy' : 'sell'}`}>
+                              {order.isBuy ? '↗ BUY' : '↘ SELL'}
+                            </span>
+                          </div>
+                          <div className="pf-history-center">
+                            <span className="pf-history-amount">{order.filledAmount.toFixed(4)}</span>
+                            <span className="pf-history-at">@</span>
+                            <span className="pf-history-price">${order.price.toFixed(2)}</span>
+                          </div>
+                          <div className="pf-history-right">
+                            <span className="pf-history-value">${(order.filledAmount * order.price).toFixed(2)}</span>
+                            <span className="pf-history-time">{formatDate(order.timestamp)}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </>
+                  </div>
                 )}
                 
                 {tradeHistory.length > 0 && (
-                  <>
-                    <h4 style={{ marginTop: '20px' }}>⚡ Off-Chain Trades</h4>
-                    <div className="history-list">
+                  <div className="pf-section">
+                    <div className="pf-section-header">
+                      <h4>⚡ Off-Chain Trades</h4>
+                      <span className="pf-section-badge">{tradeHistory.length}</span>
+                    </div>
+                    <div className="pf-history-list">
                       {tradeHistory.slice(0, 10).map((trade, i) => (
-                        <div key={i} className="history-item">
-                          <span className={`history-side ${trade.side}`}>{trade.side === 'buy' ? '↗ BUY' : '↘ SELL'}</span>
-                          <span className="history-amount">{trade.amount.toFixed(4)}</span>
-                          <span className="history-price">@ ${trade.price.toFixed(2)}</span>
-                          <span className="history-value">${(trade.amount * trade.price).toFixed(2)}</span>
-                          <span className="history-time">{formatTime(trade.timestamp)}</span>
+                        <div key={i} className={`pf-history-item ${trade.side}`}>
+                          <div className="pf-history-left">
+                            <span className={`pf-history-side ${trade.side}`}>
+                              {trade.side === 'buy' ? '↗ BUY' : '↘ SELL'}
+                            </span>
+                          </div>
+                          <div className="pf-history-center">
+                            <span className="pf-history-amount">{trade.amount.toFixed(4)}</span>
+                            <span className="pf-history-at">@</span>
+                            <span className="pf-history-price">${trade.price.toFixed(2)}</span>
+                          </div>
+                          <div className="pf-history-right">
+                            <span className="pf-history-value">${(trade.amount * trade.price).toFixed(2)}</span>
+                            <span className="pf-history-time">{formatTime(trade.timestamp)}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {filledOnChainOrders.length === 0 && tradeHistory.length === 0 && (
-                  <div className="empty-state-card"><span className="empty-icon">📜</span><h4>No Trade History</h4><p>Your completed trades will appear here</p></div>
+                  <div className="pf-empty-card">
+                    <div className="pf-empty-icon">📜</div>
+                    <h4>No Trade History</h4>
+                    <p>Your completed trades will appear here</p>
+                  </div>
                 )}
               </div>
             )}

@@ -12,7 +12,8 @@ export function Sidebar() {
     priceAlerts, addPriceAlert, removePriceAlert,
     achievements, slippage, setSlippage,
     soundEnabled, toggleSound, darkMode, toggleDarkMode,
-    shortcutsEnabled, toggleShortcuts
+    shortcutsEnabled, toggleShortcuts,
+    useOnChain, toggleOnChain
   } = useUIStore()
   
   const { currentPair, trades } = useOrderBookStore()
@@ -170,6 +171,16 @@ export function Sidebar() {
 
           {sidebarContent === 'settings' && (
             <div className="settings-panel">
+              <div className="setting-item">
+                <div className="setting-info">
+                  <span className="setting-label">Trading Mode</span>
+                  <span className="setting-desc">{useOnChain ? '🔗 On-Chain (Monad Testnet)' : '⚡ Fast (Simulated)'}</span>
+                </div>
+                <button className={`toggle ${useOnChain ? 'on' : ''}`} onClick={toggleOnChain}>
+                  <span className="toggle-slider" />
+                </button>
+              </div>
+
               <div className="setting-item">
                 <div className="setting-info">
                   <span className="setting-label">Dark Mode</span>

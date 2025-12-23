@@ -1,10 +1,10 @@
-import { useState } from 'react'
 import { useOrderBookStore } from '../store/orderBookStore'
+import { useUIStore } from '../store/uiStore'
 import { useOnChainTrades } from '../hooks/useOrderBook'
 
 export function RecentTrades() {
   const { currentPair, trades } = useOrderBookStore()
-  const [showOnChain, setShowOnChain] = useState(false)
+  const { useOnChain, toggleOnChain } = useUIStore()
   
   // On-chain trades
   const { trades: onChainTrades, isLoading } = useOnChainTrades(20)
@@ -21,22 +21,22 @@ export function RecentTrades() {
     side: t.buyOrderId > t.sellOrderId ? 'buy' : 'sell' as 'buy' | 'sell',
   }))
   
-  const currentTrades = showOnChain ? formattedOnChainTrades : offChainTrades
+  const currentTrades = useOnChain ? formattedOnChainTrades : offChainTrades
 
   return (
     <div className="recent-trades">
       <div className="trades-title">
         <h3>Recent Trades</h3>
         <button 
-          className={`source-toggle ${showOnChain ? 'on-chain' : ''}`}
-          onClick={() => setShowOnChain(!showOnChain)}
-          title={showOnChain ? 'Showing on-chain trades' : 'Showing off-chain trades'}
+          className={`mode-toggle-btn small ${useOnChain ? 'on-chain' : ''}`}
+          onClick={toggleOnChain}
+          title={useOnChain ? 'Switch to Fast Mode' : 'Switch to On-Chain Mode'}
         >
-          {showOnChain ? '🔗' : '⚡'}
+          {useOnChain ? '🔗' : '⚡'}
         </button>
       </div>
       
-      {showOnChain && isLoading && (
+      {useOnChain && isLoading && (
         <div className="loading-indicator">Loading...</div>
       )}
       
@@ -59,7 +59,7 @@ export function RecentTrades() {
         
         {currentTrades.length === 0 && !isLoading && (
           <div className="no-trades">
-            {showOnChain ? 'No on-chain trades yet' : 'No trades yet'}
+            {useOnChain ? 'No on-chain trades yet' : 'No trades yet'}
           </div>
         )}
       </div>

@@ -1,10 +1,10 @@
-import { useState } from 'react'
 import { useOrderBookStore } from '../store/orderBookStore'
+import { useUIStore } from '../store/uiStore'
 import { useOnChainOrderBook, useOrderBookStats } from '../hooks/useOrderBook'
 
 export function OrderBook() {
   const { currentPair, bids, asks } = useOrderBookStore()
-  const [showOnChain, setShowOnChain] = useState(false)
+  const { useOnChain, toggleOnChain } = useUIStore()
   
   // On-chain data
   const { bids: onChainBids, asks: onChainAsks, isLoading } = useOnChainOrderBook(12)
@@ -14,21 +14,21 @@ export function OrderBook() {
   const offChainBids = bids.get(currentPair.symbol) || []
   const offChainAsks = asks.get(currentPair.symbol) || []
   
-  // Use on-chain or off-chain based on toggle
-  const currentBids = showOnChain 
+  // Use on-chain or off-chain based on global toggle
+  const currentBids = useOnChain 
     ? onChainBids.map((b, i) => ({ id: `bid-${i}`, price: b.price, amount: b.amount }))
     : offChainBids
-  const currentAsks = showOnChain 
+  const currentAsks = useOnChain 
     ? onChainAsks.map((a, i) => ({ id: `ask-${i}`, price: a.price, amount: a.amount }))
     : offChainAsks
   
-  const currentPrice = showOnChain && lastPrice > 0 ? lastPrice : currentPair.basePrice
+  const currentPrice = useOnChain && lastPrice > 0 ? lastPrice : currentPair.basePrice
 
   const maxBidAmount = Math.max(...currentBids.map(b => b.amount), 1)
   const maxAskAmount = Math.max(...currentAsks.map(a => a.amount), 1)
 
   const spread = currentAsks.length > 0 && currentBids.length > 0
-    ? ((currentAsks[0]?.price || 0) - (currentBids[0]?.price || 0)).toFixed(2)
+    ? Math.abs((currentAsks[0]?.price || 0) - (currentBids[0]?.price || 0)).toFixed(2)
     : '0.00'
 
   return (
@@ -37,17 +37,17 @@ export function OrderBook() {
         <h3>Order Book</h3>
         <div className="order-book-controls">
           <button 
-            className={`source-toggle ${showOnChain ? 'on-chain' : ''}`}
-            onClick={() => setShowOnChain(!showOnChain)}
-            title={showOnChain ? 'Showing on-chain data' : 'Showing off-chain data'}
+            className={`mode-toggle-btn ${useOnChain ? 'on-chain' : ''}`}
+            onClick={toggleOnChain}
+            title={useOnChain ? 'Switch to Fast Mode' : 'Switch to On-Chain Mode'}
           >
-            {showOnChain ? '🔗' : '⚡'}
+            {useOnChain ? 'On-Chain' : 'Fast'}
           </button>
           <span className="spread">Spread: ${spread}</span>
         </div>
       </div>
       
-      {showOnChain && isLoading && (
+      {useOnChain && isLoading && (
         <div className="loading-indicator">Loading on-chain data...</div>
       )}
       
@@ -69,14 +69,14 @@ export function OrderBook() {
             <span className="total">{(ask.price * ask.amount).toFixed(2)}</span>
           </div>
         ))}
-        {showOnChain && currentAsks.length === 0 && !isLoading && (
-          <div className="no-orders">No on-chain asks</div>
+        {currentAsks.length === 0 && !isLoading && (
+          <div className="no-orders">{useOnChain ? 'No on-chain asks' : 'No asks'}</div>
         )}
       </div>
 
       <div className="current-price">
         <span className="price-label">${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        {showOnChain && <span className="chain-badge">🔗</span>}
+        {useOnChain && <span className="chain-badge">🔗</span>}
       </div>
 
       <div className="bids">
@@ -91,8 +91,8 @@ export function OrderBook() {
             <span className="total">{(bid.price * bid.amount).toFixed(2)}</span>
           </div>
         ))}
-        {showOnChain && currentBids.length === 0 && !isLoading && (
-          <div className="no-orders">No on-chain bids</div>
+        {currentBids.length === 0 && !isLoading && (
+          <div className="no-orders">{useOnChain ? 'No on-chain bids' : 'No bids'}</div>
         )}
       </div>
     </div>

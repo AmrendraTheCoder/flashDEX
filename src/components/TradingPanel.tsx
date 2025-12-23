@@ -27,10 +27,9 @@ export function TradingPanel() {
     currentPair, addUserOrder, setUserPortfolio, userPortfolio,
     addUserTrade, updateUserPosition 
   } = useOrderBookStore()
-  const { slippage, unlockAchievement } = useUIStore()
+  const { slippage, unlockAchievement, useOnChain, toggleOnChain } = useUIStore()
   const onChainBalances = useAllBalances()
   
-  // On-chain order hooks
   const { placeOrder, isPlacing, isPlaced } = usePlaceOrder()
   const { orders: userOnChainOrders, refetch: refetchOrders } = useUserOrders()
   const { cancelOrder, isCancelling } = useCancelOrder()
@@ -43,13 +42,22 @@ export function TradingPanel() {
   const [tpPrice, setTpPrice] = useState('')
   const [trailPercent, setTrailPercent] = useState('1')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [useOnChain, setUseOnChain] = useState(false)
 
   const currentPrice = currentPair.basePrice
   const amountNum = parseFloat(amount) || 0
   const priceNum = parseFloat(price) || currentPrice
   const orderValue = amountNum * (orderType === 'market' ? currentPrice : priceNum)
   const fee = orderValue * 0.001
+
+  // Initialize portfolio when wallet connects - using useEffect to avoid setState during render
+  useEffect(() => {
+    if (isConnected && address && !userPortfolio) {
+      setUserPortfolio({
+        address, balance: 10000, positions: [], openOrders: [],
+        tradeHistory: [], totalPnl: 0, totalVolume: 0, totalTrades: 0,
+      })
+    }
+  }, [isConnected, address, userPortfolio, setUserPortfolio])
 
   useEffect(() => {
     if (isPlaced) {
@@ -59,13 +67,6 @@ export function TradingPanel() {
       setPrice('')
     }
   }, [isPlaced, refetchOrders])
-
-  if (isConnected && address && !userPortfolio) {
-    setUserPortfolio({
-      address, balance: 10000, positions: [], openOrders: [],
-      tradeHistory: [], totalPnl: 0, totalVolume: 0, totalTrades: 0,
-    })
-  }
 
   const handleSubmit = async () => {
     if (!isConnected) { toast.error('Connect wallet to trade'); return }
@@ -77,7 +78,6 @@ export function TradingPanel() {
       ? currentPrice * (side === 'buy' ? 1 + slippage/100 : 1 - slippage/100)
       : priceNum
 
-    // On-chain order
     if (useOnChain) {
       try {
         const onChainOrderType = orderType === 'market' ? 1 : 0
@@ -92,7 +92,6 @@ export function TradingPanel() {
       return
     }
 
-    // Off-chain order
     const order: Order = {
       id: matchingEngine.generateOrderId(),
       price: orderPrice, amount: amountNum, side, timestamp: Date.now(),
@@ -167,7 +166,7 @@ export function TradingPanel() {
         <div className="header-controls">
           <button 
             className={`chain-toggle ${useOnChain ? 'on-chain' : ''}`}
-            onClick={() => setUseOnChain(!useOnChain)}
+            onClick={toggleOnChain}
             title={useOnChain ? 'On-chain orders (slower, permanent)' : 'Off-chain orders (fast, simulated)'}
           >
             {useOnChain ? '🔗 On-Chain' : '⚡ Fast'}
